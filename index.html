@@ -519,6 +519,7 @@
               <button type="button" class="btn-primary" id="linkJsonFolderBtn">Seleccionar / cambiar carpeta JSON</button>
               <button type="button" class="btn-success" id="saveJsonNowBtn">Guardar JSON ahora</button>
               <button type="button" class="btn-success" id="exportBtn">Exportar JSON</button>
+              <button type="button" class="btn-secondary" id="renameJsonBtn">Cambiar nombre JSON</button>
               <button type="button" class="btn-secondary" id="importBtn">Importar JSON</button>
               <button type="button" class="btn-danger" id="clearAllBtn">Vaciar todo</button>
               <input type="file" id="importFile" accept=".json" class="hidden" />
@@ -682,6 +683,7 @@
     const importFile = document.getElementById("importFile");
     const linkJsonFolderBtn = document.getElementById("linkJsonFolderBtn");
     const saveJsonNowBtn = document.getElementById("saveJsonNowBtn");
+    const renameJsonBtn = document.getElementById("renameJsonBtn");
     const jsonFolderStatus = document.getElementById("jsonFolderStatus");
     const jsonSaveStatus = document.getElementById("jsonSaveStatus");
     const currentJsonFileName = document.getElementById("currentJsonFileName");
@@ -745,6 +747,29 @@
           ? "Modo actual: carpeta vinculada + exportación con el mismo nombre."
           : "Modo actual: navegador / exportación manual.";
       }
+    }
+
+    async function renameActiveJsonFile() {
+      const currentName = getActiveJsonFileName();
+      const proposed = prompt("Escribe el nuevo nombre del archivo JSON:", currentName);
+      if (proposed === null) return;
+
+      const trimmed = String(proposed || "").trim();
+      if (!trimmed) {
+        alert("Debes indicar un nombre de archivo.");
+        return;
+      }
+
+      const newName = setActiveJsonFileName(trimmed);
+
+      if (linkedDirectoryHandle) {
+        setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${newName}`, "status-ok");
+        setJsonSaveStatus(`El nombre activo se ha cambiado a ${newName}. El próximo guardado usará ese nombre.`, "status-ok");
+      } else {
+        setJsonSaveStatus(`El nombre activo se ha cambiado a ${newName}.`, "status-ok");
+      }
+
+      updateCurrentJsonFileInfo();
     }
 
     function openHandleDatabase() {
@@ -1983,6 +2008,7 @@
     printCurrentWordBtn.addEventListener("click", exportCurrentIdeaToWord);
     linkJsonFolderBtn.addEventListener("click", chooseLinkedJsonFolder);
     saveJsonNowBtn.addEventListener("click", forceSaveLinkedJsonNow);
+    renameJsonBtn.addEventListener("click", renameActiveJsonFile);
 
     function editIdea(id) {
       const ideas = normalizeIdeasArray(loadIdeas());
