@@ -415,7 +415,7 @@
 <body>
   <header>
     <h1>Gestor de Ideas</h1>
-    <p>Registro de llamadas, reuniones/visitas y gestión de ideas con plan de acciones. Compatible con autoguardado en OneDrive.</p>
+    <p>Registro de llamadas, reuniones/visitas y gestión de ideas con plan de acciones.</p>
   </header>
 
   <div class="container">
@@ -516,7 +516,7 @@
           <div class="section-mini">
             <h4>Datos</h4>
             <div class="actions">
-              <button type="button" class="btn-primary" id="linkJsonFolderBtn">Vincular carpeta OneDrive / JSON</button>
+              <button type="button" class="btn-primary" id="linkJsonFolderBtn">Seleccionar / cambiar carpeta JSON</button>
               <button type="button" class="btn-success" id="saveJsonNowBtn">Guardar JSON ahora</button>
               <button type="button" class="btn-success" id="exportBtn">Exportar JSON</button>
               <button type="button" class="btn-secondary" id="importBtn">Importar JSON</button>
@@ -525,11 +525,11 @@
             </div>
             <div class="status-box">
               <strong>Autoguardado JSON</strong>
-              <div id="jsonFolderStatus" class="small">Carpeta no seleccionada. Pulsa “Vincular carpeta OneDrive / JSON”.</div>
+              <div id="jsonFolderStatus" class="small">Carpeta no seleccionada. Pulsa “Seleccionar / cambiar carpeta JSON”.</div>
               <div id="jsonSaveStatus" class="small">Los datos siguen guardándose también en este navegador.</div>
             </div>
             <div class="small" style="margin-top:8px;">
-              Si eliges una carpeta dentro de <b>OneDrive</b>, el programa guardará automáticamente el archivo <b>ideas.json</b> allí y OneDrive lo sincronizará con la nube. También puedes elegir cualquier otra carpeta local.
+              Al elegir una carpeta, el programa guardará automáticamente el archivo <b>ideas.json</b> en ese equipo. Puedes cambiar la carpeta cuando quieras.
             </div>
           </div>
         </div>
@@ -611,8 +611,7 @@
 
   <script>
     const STORAGE_KEY = "gestor_ideas_html_v11";
-    const DEFAULT_JSON_FILENAME = "ideas.json";
-    const JSON_FILENAME_KEY = "gestor_ideas_json_filename_v15";
+    const AUTO_JSON_FILENAME = "ideas.json";
     const LINKED_FS_DB = "gestor_ideas_fs_db";
     const LINKED_FS_STORE = "handles";
     const LINKED_FS_KEY = "json_directory";
@@ -680,8 +679,6 @@
     const importFile = document.getElementById("importFile");
     const linkJsonFolderBtn = document.getElementById("linkJsonFolderBtn");
     const saveJsonNowBtn = document.getElementById("saveJsonNowBtn");
-    const saveAsBtn = document.getElementById("saveAsBtn");
-    const jsonFileNameInput = document.getElementById("jsonFileName");
     const jsonFolderStatus = document.getElementById("jsonFolderStatus");
     const jsonSaveStatus = document.getElementById("jsonSaveStatus");
 
@@ -700,37 +697,8 @@
     let autosaveQueuedIdeas = null;
     let autosaveRunning = false;
 
-    function sanitizeJsonFilename(name) {
-      const base = String(name || "").trim().replace(/[\/:*?"<>|]+/g, "_").replace(/\s+/g, " ");
-      const cleaned = base || DEFAULT_JSON_FILENAME;
-      return cleaned.toLowerCase().endsWith(".json") ? cleaned : `${cleaned}.json`;
-    }
-
-    function getCurrentJsonFilename() {
-      return sanitizeJsonFilename(jsonFileNameInput?.value || localStorage.getItem(JSON_FILENAME_KEY) || DEFAULT_JSON_FILENAME);
-    }
-
-    function setCurrentJsonFilename(name, persist = true) {
-      const safeName = sanitizeJsonFilename(name);
-      if (jsonFileNameInput) jsonFileNameInput.value = safeName;
-      if (persist) localStorage.setItem(JSON_FILENAME_KEY, safeName);
-      return safeName;
-    }
-
-    function supportsSaveFilePicker() {
-      return !!window.showSaveFilePicker;
-    }
-
-    function supportsOpenFilePicker() {
-      return !!window.showOpenFilePicker;
-    }
-
-    function supportsDirectoryLinkedAutosave() {
-      return !!(window.showDirectoryPicker && window.indexedDB);
-    }
-
     function supportsLinkedJsonAutosave() {
-      return supportsDirectoryLinkedAutosave();
+      return !!(window.showDirectoryPicker && window.indexedDB);
     }
 
     function setJsonFolderStatus(message, level = "") {
@@ -797,7 +765,7 @@
 
     async function getLinkedJsonFileHandle(createIfMissing = true) {
       if (!linkedDirectoryHandle) return null;
-      return await linkedDirectoryHandle.getFileHandle(getCurrentJsonFilename(), { create: createIfMissing });
+      return await linkedDirectoryHandle.getFileHandle(AUTO_JSON_FILENAME, { create: createIfMissing });
     }
 
     async function writeIdeasToLinkedJson(ideas) {
@@ -817,9 +785,8 @@
       await writable.write(JSON.stringify(normalizeIdeasArray(ideas), null, 2));
       await writable.close();
 
-      const filename = getCurrentJsonFilename();
-      setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${filename}`, "status-ok");
-      setJsonSaveStatus(`Guardado automático correcto: ${filename}. Si la carpeta pertenece a OneDrive, quedará sincronizado en la nube.`, "status-ok");
+      setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${AUTO_JSON_FILENAME}`, "status-ok");
+      setJsonSaveStatus(`Guardado automático correcto: ${AUTO_JSON_FILENAME}`, "status-ok");
       return true;
     }
 
@@ -845,12 +812,12 @@
 
     function scheduleLinkedJsonAutosave(ideas) {
       if (!linkedDirectoryHandle) {
-        setJsonSaveStatus(`Los datos se guardan en este navegador. Si quieres, vincula una carpeta para crear ${getCurrentJsonFilename()} automáticamente.`, "status-warn");
+        setJsonSaveStatus("Los datos se guardan en este navegador. Si quieres, vincula una carpeta para crear ideas.json automáticamente.", "status-warn");
         return;
       }
 
       autosaveQueuedIdeas = normalizeIdeasArray(ideas);
-      setJsonSaveStatus(`Cambios pendientes de guardar en ${getCurrentJsonFilename()}...`, "status-warn");
+      setJsonSaveStatus(`Cambios pendientes de guardar en ${AUTO_JSON_FILENAME}...`, "status-warn");
 
       clearTimeout(autosaveTimer);
       autosaveTimer = setTimeout(() => {
@@ -867,7 +834,7 @@
       }
 
       if (!linkedDirectoryHandle) {
-        alert("Primero vincula una carpeta OneDrive o una carpeta JSON local.");
+        alert("Primero selecciona una carpeta JSON.");
         return;
       }
 
@@ -884,7 +851,7 @@
 
     async function chooseLinkedJsonFolder() {
       if (!supportsLinkedJsonAutosave()) {
-        alert("Este navegador no permite fijar una carpeta de autoguardado. Puedes seguir usando Exportar JSON manualmente, o abrir el archivo en Chrome/Edge.");
+        alert("Este navegador no permite fijar una carpeta de autoguardado JSON. Puedes seguir usando Exportar JSON manualmente.");
         return;
       }
 
@@ -900,9 +867,8 @@
         linkedDirectoryHandle = directoryHandle;
         await saveDirectoryHandleToDB(directoryHandle);
 
-        const filename = getCurrentJsonFilename();
-        setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${filename}`, "status-ok");
-        setJsonSaveStatus(`Preparado para guardar automáticamente en ${filename}.`, "status-ok");
+        setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${AUTO_JSON_FILENAME}`, "status-ok");
+        setJsonSaveStatus(`Preparado para guardar automáticamente en ${AUTO_JSON_FILENAME}.`, "status-ok");
 
         const fileHandle = await getLinkedJsonFileHandle(true);
         const file = await fileHandle.getFile();
@@ -913,13 +879,12 @@
             const parsed = JSON.parse(content);
             const linkedIdeas = normalizeIdeasArray(parsed);
 
-            const filename = getCurrentJsonFilename();
-            if (Array.isArray(parsed) && linkedIdeas.length && confirm(`Se ha encontrado ${filename} en la carpeta seleccionada. ¿Quieres cargar ese archivo ahora en el programa?`)) {
+            if (Array.isArray(parsed) && linkedIdeas.length && confirm(`Se ha encontrado ${AUTO_JSON_FILENAME} en la carpeta seleccionada. ¿Quieres cargar ese archivo ahora en el programa?`)) {
               saveIdeas(linkedIdeas);
               selectedIdeaIds.clear();
               resetForm();
               renderIdeas();
-              setJsonSaveStatus(`Archivo ${getCurrentJsonFilename()} cargado y vinculado correctamente.`, "status-ok");
+              setJsonSaveStatus(`Archivo ${AUTO_JSON_FILENAME} cargado y vinculado correctamente.`, "status-ok");
               return;
             }
           } catch {
@@ -935,12 +900,6 @@
       }
     }
 
-
-    async function chooseOneDriveJsonFolder() {
-      alert("Selecciona una carpeta dentro de OneDrive (por ejemplo: OneDrive\GestorIdeas). Desde ese momento el archivo ideas.json se guardará ahí automáticamente y OneDrive lo sincronizará con la nube.");
-      await chooseLinkedJsonFolder();
-    }
-
     async function initLinkedJsonFolder() {
       if (!supportsLinkedJsonAutosave()) {
         setJsonFolderStatus("Este navegador no permite fijar una carpeta de guardado automático JSON.", "status-warn");
@@ -952,17 +911,16 @@
         linkedDirectoryHandle = await loadDirectoryHandleFromDB();
 
         if (!linkedDirectoryHandle) {
-          setJsonFolderStatus("Carpeta no seleccionada. Pulsa “Vincular carpeta OneDrive / JSON”.", "status-warn");
-          setJsonSaveStatus(`Los datos se guardan en este navegador. Si quieres, vincula una carpeta para crear ${getCurrentJsonFilename()} automáticamente.`, "status-warn");
+          setJsonFolderStatus("Carpeta no seleccionada. Pulsa “Seleccionar / cambiar carpeta JSON”.", "status-warn");
+          setJsonSaveStatus("Los datos se guardan en este navegador. Si quieres, vincula una carpeta para crear ideas.json automáticamente.", "status-warn");
           return;
         }
 
         const permission = await getDirectoryPermissionState(linkedDirectoryHandle);
-        const filename = getCurrentJsonFilename();
-        setJsonFolderStatus(`Carpeta recordada: ${linkedDirectoryHandle.name} · archivo ${filename}`, permission === "granted" ? "status-ok" : "status-warn");
+        setJsonFolderStatus(`Carpeta recordada: ${linkedDirectoryHandle.name} · archivo ${AUTO_JSON_FILENAME}`, permission === "granted" ? "status-ok" : "status-warn");
 
         if (permission === "granted") {
-          setJsonSaveStatus(`Autoguardado activo en ${filename}.`, "status-ok");
+          setJsonSaveStatus(`Autoguardado activo en ${AUTO_JSON_FILENAME}.`, "status-ok");
         } else {
           setJsonSaveStatus("La carpeta está recordada, pero quizá tengas que pulsar “Guardar JSON ahora” o volver a elegir la carpeta para dar permiso.", "status-warn");
         }
@@ -971,84 +929,6 @@
         setJsonFolderStatus("No se pudo recuperar la carpeta JSON guardada anteriormente.", "status-error");
         setJsonSaveStatus("Puedes volver a seleccionarla cuando quieras.", "status-warn");
       }
-    }
-
-    async function saveJsonAsFile() {
-      const ideas = normalizeIdeasArray(loadIdeas());
-      const filename = getCurrentJsonFilename();
-
-      if (supportsSaveFilePicker()) {
-        try {
-          const fileHandle = await window.showSaveFilePicker({
-            suggestedName: filename,
-            types: [{
-              description: "Archivo JSON",
-              accept: { "application/json": [".json"] }
-            }]
-          });
-
-          const writable = await fileHandle.createWritable();
-          await writable.write(JSON.stringify(ideas, null, 2));
-          await writable.close();
-
-          setCurrentJsonFilename(fileHandle.name);
-          setJsonSaveStatus(`Archivo guardado manualmente como ${getCurrentJsonFilename()}.`, "status-ok");
-          return true;
-        } catch (error) {
-          if (error && error.name === "AbortError") return false;
-          console.error(error);
-          alert("No se pudo guardar el archivo JSON.");
-          return false;
-        }
-      }
-
-      const blob = new Blob([JSON.stringify(ideas, null, 2)], { type: "application/json" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      setJsonSaveStatus(`Archivo exportado como ${filename}.`, "status-ok");
-      return true;
-    }
-
-    async function importJsonWithPicker() {
-      if (supportsOpenFilePicker()) {
-        try {
-          const [fileHandle] = await window.showOpenFilePicker({
-            multiple: false,
-            types: [{
-              description: "Archivo JSON",
-              accept: { "application/json": [".json"] }
-            }]
-          });
-
-          const file = await fileHandle.getFile();
-          const text = await file.text();
-          const data = JSON.parse(text);
-
-          if (!Array.isArray(data)) {
-            alert("El archivo no tiene un formato válido.");
-            return;
-          }
-
-          setCurrentJsonFilename(file.name);
-          const normalizedData = normalizeIdeasArray(data);
-          saveIdeas(normalizedData);
-          selectedIdeaIds.clear();
-          resetForm();
-          renderIdeas();
-          setJsonSaveStatus(`Datos importados correctamente desde ${getCurrentJsonFilename()}.`, "status-ok");
-          return;
-        } catch (error) {
-          if (error && error.name === "AbortError") return;
-          console.error(error);
-          alert("No se pudo leer el archivo JSON.");
-          return;
-        }
-      }
-
-      importFile.click();
     }
 
     function loadIdeas() {
@@ -2070,7 +1950,7 @@
     exportExcelBtn.addEventListener("click", exportSelectedToExcel);
     printCurrentPdfBtn.addEventListener("click", printCurrentIdeaToPDF);
     printCurrentWordBtn.addEventListener("click", exportCurrentIdeaToWord);
-    linkJsonFolderBtn.addEventListener("click", chooseOneDriveJsonFolder);
+    linkJsonFolderBtn.addEventListener("click", chooseLinkedJsonFolder);
     saveJsonNowBtn.addEventListener("click", forceSaveLinkedJsonNow);
 
     function editIdea(id) {
@@ -2130,20 +2010,16 @@
 
     exportBtn.addEventListener("click", () => {
       const ideas = normalizeIdeasArray(loadIdeas());
-      const filename = getCurrentJsonFilename();
       const blob = new Blob([JSON.stringify(ideas, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = filename;
+      a.download = "ideas_exportadas.json";
       a.click();
       URL.revokeObjectURL(a.href);
-      setJsonSaveStatus(`Archivo exportado como ${filename}.`, "status-ok");
     });
 
-    saveAsBtn.addEventListener("click", saveJsonAsFile);
-
     importBtn.addEventListener("click", () => {
-      importJsonWithPicker();
+      importFile.click();
     });
 
     importFile.addEventListener("change", (e) => {
@@ -2162,12 +2038,10 @@
 
           const normalizedData = normalizeIdeasArray(data);
 
-          setCurrentJsonFilename(file.name);
           saveIdeas(normalizedData);
           selectedIdeaIds.clear();
           resetForm();
           renderIdeas();
-          setJsonSaveStatus(`Datos importados correctamente desde ${getCurrentJsonFilename()}.`, "status-ok");
           alert("Datos importados correctamente.");
         } catch {
           alert("No se pudo leer el archivo JSON.");
@@ -2283,25 +2157,9 @@
       URL.revokeObjectURL(a.href);
     }
 
-    setCurrentJsonFilename(localStorage.getItem(JSON_FILENAME_KEY) || DEFAULT_JSON_FILENAME, false);
-
-    jsonFileNameInput.addEventListener("change", () => {
-      const current = setCurrentJsonFilename(jsonFileNameInput.value);
-      if (linkedDirectoryHandle) {
-        setJsonSaveStatus(`Se usará el archivo ${current} para el siguiente guardado automático.`, "status-warn");
-        scheduleLinkedJsonAutosave(loadIdeas());
-      } else {
-        setJsonSaveStatus(`Nombre de archivo preparado: ${current}.`, "status-ok");
-      }
-    });
-
-    jsonFileNameInput.addEventListener("blur", () => {
-      setCurrentJsonFilename(jsonFileNameInput.value);
-    });
-
     renderDynamicFields({});
-    renderIdeas();
     initLinkedJsonFolder();
+    renderIdeas();
 
     window.editIdea = editIdea;
     window.markDone = markDone;
