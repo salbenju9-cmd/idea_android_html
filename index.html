@@ -527,9 +527,11 @@
               <strong>Autoguardado JSON</strong>
               <div id="jsonFolderStatus" class="small">Carpeta no seleccionada. Pulsa “Seleccionar / cambiar carpeta JSON”.</div>
               <div id="jsonSaveStatus" class="small">Los datos siguen guardándose también en este navegador.</div>
+              <div id="currentJsonFileName" class="small" style="margin-top:6px;"><b>Archivo JSON en uso:</b> ideas.json</div>
+              <div id="currentJsonMode" class="small">Modo actual: archivo por defecto.</div>
             </div>
             <div class="small" style="margin-top:8px;">
-              Al elegir una carpeta, el programa guardará automáticamente el archivo <b>ideas.json</b> en ese equipo. Puedes cambiar la carpeta cuando quieras.
+              Al elegir una carpeta, el programa guardará automáticamente el archivo que esté en uso en ese equipo. Puedes cambiar la carpeta cuando quieras.
             </div>
           </div>
         </div>
@@ -610,8 +612,9 @@
   </div>
 
   <script>
-    const STORAGE_KEY = "gestor_ideas_html_v11";
+    const STORAGE_KEY = "gestor_ideas_html_v12";
     const AUTO_JSON_FILENAME = "ideas.json";
+    const ACTIVE_JSON_NAME_KEY = "gestor_ideas_active_json_name";
     const LINKED_FS_DB = "gestor_ideas_fs_db";
     const LINKED_FS_STORE = "handles";
     const LINKED_FS_KEY = "json_directory";
@@ -681,6 +684,8 @@
     const saveJsonNowBtn = document.getElementById("saveJsonNowBtn");
     const jsonFolderStatus = document.getElementById("jsonFolderStatus");
     const jsonSaveStatus = document.getElementById("jsonSaveStatus");
+    const currentJsonFileName = document.getElementById("currentJsonFileName");
+    const currentJsonMode = document.getElementById("currentJsonMode");
 
     const selectVisibleBtn = document.getElementById("selectVisibleBtn");
     const clearSelectionBtn = document.getElementById("clearSelectionBtn");
@@ -709,6 +714,37 @@
     function setJsonSaveStatus(message, level = "") {
       jsonSaveStatus.textContent = message;
       jsonSaveStatus.className = `small ${level}`.trim();
+    }
+
+    function sanitizeJsonFileName(name) {
+      let safeName = String(name || "").trim();
+      if (!safeName) safeName = AUTO_JSON_FILENAME;
+      safeName = safeName.replace(/[\\/:*?"<>|]/g, "_");
+      if (!safeName.toLowerCase().endsWith(".json")) safeName += ".json";
+      return safeName;
+    }
+
+    function getActiveJsonFileName() {
+      return sanitizeJsonFileName(localStorage.getItem(ACTIVE_JSON_NAME_KEY) || AUTO_JSON_FILENAME);
+    }
+
+    function setActiveJsonFileName(name) {
+      const safeName = sanitizeJsonFileName(name);
+      localStorage.setItem(ACTIVE_JSON_NAME_KEY, safeName);
+      updateCurrentJsonFileInfo();
+      return safeName;
+    }
+
+    function updateCurrentJsonFileInfo() {
+      const fileName = getActiveJsonFileName();
+      if (currentJsonFileName) {
+        currentJsonFileName.innerHTML = `<b>Archivo JSON en uso:</b> ${escapeHtml(fileName)}`;
+      }
+      if (currentJsonMode) {
+        currentJsonMode.textContent = linkedDirectoryHandle
+          ? "Modo actual: carpeta vinculada + exportación con el mismo nombre."
+          : "Modo actual: navegador / exportación manual.";
+      }
     }
 
     function openHandleDatabase() {
@@ -765,10 +801,12 @@
 
     async function getLinkedJsonFileHandle(createIfMissing = true) {
       if (!linkedDirectoryHandle) return null;
-      return await linkedDirectoryHandle.getFileHandle(AUTO_JSON_FILENAME, { create: createIfMissing });
+      return await linkedDirectoryHandle.getFileHandle(getActiveJsonFileName(), { create: createIfMissing });
     }
 
     async function writeIdeasToLinkedJson(ideas) {
+      const activeFileName = getActiveJsonFileName();
+
       if (!linkedDirectoryHandle) {
         setJsonSaveStatus("No hay carpeta seleccionada para el autoguardado JSON.", "status-warn");
         return false;
@@ -785,8 +823,9 @@
       await writable.write(JSON.stringify(normalizeIdeasArray(ideas), null, 2));
       await writable.close();
 
-      setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${AUTO_JSON_FILENAME}`, "status-ok");
-      setJsonSaveStatus(`Guardado automático correcto: ${AUTO_JSON_FILENAME}`, "status-ok");
+      setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${activeFileName}`, "status-ok");
+      setJsonSaveStatus(`Guardado automático correcto: ${activeFileName}`, "status-ok");
+      updateCurrentJsonFileInfo();
       return true;
     }
 
@@ -812,12 +851,12 @@
 
     function scheduleLinkedJsonAutosave(ideas) {
       if (!linkedDirectoryHandle) {
-        setJsonSaveStatus("Los datos se guardan en este navegador. Si quieres, vincula una carpeta para crear ideas.json automáticamente.", "status-warn");
+        setJsonSaveStatus("Los datos se guardan en este navegador. Si quieres, vincula una carpeta para crear el JSON automáticamente.", "status-warn");
         return;
       }
 
       autosaveQueuedIdeas = normalizeIdeasArray(ideas);
-      setJsonSaveStatus(`Cambios pendientes de guardar en ${AUTO_JSON_FILENAME}...`, "status-warn");
+      setJsonSaveStatus(`Cambios pendientes de guardar en ${getActiveJsonFileName()}...`, "status-warn");
 
       clearTimeout(autosaveTimer);
       autosaveTimer = setTimeout(() => {
@@ -847,6 +886,7 @@
 
       autosaveQueuedIdeas = ideas;
       await flushLinkedJsonAutosave();
+      updateCurrentJsonFileInfo();
     }
 
     async function chooseLinkedJsonFolder() {
@@ -867,8 +907,10 @@
         linkedDirectoryHandle = directoryHandle;
         await saveDirectoryHandleToDB(directoryHandle);
 
-        setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${AUTO_JSON_FILENAME}`, "status-ok");
-        setJsonSaveStatus(`Preparado para guardar automáticamente en ${AUTO_JSON_FILENAME}.`, "status-ok");
+        const activeFileName = getActiveJsonFileName();
+        setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${activeFileName}`, "status-ok");
+        setJsonSaveStatus(`Preparado para guardar automáticamente en ${activeFileName}.`, "status-ok");
+        updateCurrentJsonFileInfo();
 
         const fileHandle = await getLinkedJsonFileHandle(true);
         const file = await fileHandle.getFile();
@@ -879,16 +921,15 @@
             const parsed = JSON.parse(content);
             const linkedIdeas = normalizeIdeasArray(parsed);
 
-            if (Array.isArray(parsed) && linkedIdeas.length && confirm(`Se ha encontrado ${AUTO_JSON_FILENAME} en la carpeta seleccionada. ¿Quieres cargar ese archivo ahora en el programa?`)) {
+            if (Array.isArray(parsed) && linkedIdeas.length && confirm(`Se ha encontrado ${activeFileName} en la carpeta seleccionada. ¿Quieres cargar ese archivo ahora en el programa?`)) {
               saveIdeas(linkedIdeas);
               selectedIdeaIds.clear();
               resetForm();
               renderIdeas();
-              setJsonSaveStatus(`Archivo ${AUTO_JSON_FILENAME} cargado y vinculado correctamente.`, "status-ok");
+              setJsonSaveStatus(`Archivo ${activeFileName} cargado y vinculado correctamente.`, "status-ok");
               return;
             }
           } catch {
-            // Si el archivo no es válido, se sobrescribe con los datos actuales.
           }
         }
 
@@ -901,9 +942,12 @@
     }
 
     async function initLinkedJsonFolder() {
+      const activeFileName = getActiveJsonFileName();
+
       if (!supportsLinkedJsonAutosave()) {
         setJsonFolderStatus("Este navegador no permite fijar una carpeta de guardado automático JSON.", "status-warn");
         setJsonSaveStatus("Puedes seguir usando Exportar JSON manualmente y los datos siguen guardándose en este navegador.", "status-warn");
+        updateCurrentJsonFileInfo();
         return;
       }
 
@@ -912,22 +956,25 @@
 
         if (!linkedDirectoryHandle) {
           setJsonFolderStatus("Carpeta no seleccionada. Pulsa “Seleccionar / cambiar carpeta JSON”.", "status-warn");
-          setJsonSaveStatus("Los datos se guardan en este navegador. Si quieres, vincula una carpeta para crear ideas.json automáticamente.", "status-warn");
+          setJsonSaveStatus("Los datos se guardan en este navegador. Si quieres, vincula una carpeta para crear el JSON automáticamente.", "status-warn");
+          updateCurrentJsonFileInfo();
           return;
         }
 
         const permission = await getDirectoryPermissionState(linkedDirectoryHandle);
-        setJsonFolderStatus(`Carpeta recordada: ${linkedDirectoryHandle.name} · archivo ${AUTO_JSON_FILENAME}`, permission === "granted" ? "status-ok" : "status-warn");
+        setJsonFolderStatus(`Carpeta recordada: ${linkedDirectoryHandle.name} · archivo ${activeFileName}`, permission === "granted" ? "status-ok" : "status-warn");
 
         if (permission === "granted") {
-          setJsonSaveStatus(`Autoguardado activo en ${AUTO_JSON_FILENAME}.`, "status-ok");
+          setJsonSaveStatus(`Autoguardado activo en ${activeFileName}.`, "status-ok");
         } else {
           setJsonSaveStatus("La carpeta está recordada, pero quizá tengas que pulsar “Guardar JSON ahora” o volver a elegir la carpeta para dar permiso.", "status-warn");
         }
+        updateCurrentJsonFileInfo();
       } catch (error) {
         console.error(error);
         setJsonFolderStatus("No se pudo recuperar la carpeta JSON guardada anteriormente.", "status-error");
         setJsonSaveStatus("Puedes volver a seleccionarla cuando quieras.", "status-warn");
+        updateCurrentJsonFileInfo();
       }
     }
 
@@ -1045,6 +1092,11 @@
         extra.planAcciones = [];
       }
 
+      if (item.tipo === "llamada") {
+        delete extra.empresa;
+        delete extra.resultado;
+      }
+
       return {
         ...item,
         extra
@@ -1120,7 +1172,7 @@
 
     function getDynamicValues() {
       const ids = [
-        "persona", "telefono", "empresa", "resultado",
+        "persona", "telefono",
         "tipoProyecto",
         "lugar", "personas", "objetivo", "seguimiento"
       ];
@@ -1195,10 +1247,6 @@
               <input id="telefono" type="text" placeholder="Número de teléfono" value="${escapeHtml(current.telefono || "")}" />
             </div>
           </div>
-          <label for="empresa">Empresa</label>
-          <input id="empresa" type="text" placeholder="Empresa o contacto" value="${escapeHtml(current.empresa || "")}" />
-          <label for="resultado">Resultado esperado</label>
-          <input id="resultado" type="text" placeholder="Qué quieres conseguir con la llamada" value="${escapeHtml(current.resultado || "")}" />
         `;
       } else if (tipo.value === "reunion_visita") {
         camposDinamicos.innerHTML = `
@@ -1563,26 +1611,9 @@
       return ideasOrdenadasEnPantalla.filter(i => selectedIdeaIds.has(i.id));
     }
 
-    function flattenPlanAcciones(idea) {
-      const acciones = Array.isArray(idea.extra?.planAcciones)
-        ? idea.extra.planAcciones
-        : (Array.isArray(idea.extra?.tareas) ? idea.extra.tareas : []);
-
-      if (!acciones.length) return "";
-
-      return acciones.map((a, index) =>
-        `Acción ${index + 1}: ${a.descripcion || ""} | Proveedor: ${a.proveedor || ""} | Estado: ${formatEstado(a.estado || "")}`
-      ).join(" || ");
-    }
-
     function getIdeaById(id) {
       const ideas = normalizeIdeasArray(loadIdeas());
       return ideas.find(i => i.id === id) || null;
-    }
-
-    function getCurrentEditingIdea() {
-      if (!ideaId.value) return null;
-      return getIdeaById(Number(ideaId.value));
     }
 
     function getCurrentFormIdeaForPrint() {
@@ -1599,7 +1630,7 @@
       return currentIdea;
     }
 
-    function renderIdeaCardHTML(idea, forPrint = false) {
+    function renderIdeaCardHTML(idea) {
       const t = tipoColors(idea.tipo);
       const p = prioridadColors(idea.prioridad);
       const e = estadoColors(idea.estado);
@@ -1716,7 +1747,7 @@
         <body>
           <h1>${escapeHtml(title)}</h1>
           <p>Total: ${ideas.length}</p>
-          ${ideas.map(idea => renderIdeaCardHTML(idea, true)).join("")}
+          ${ideas.map(idea => renderIdeaCardHTML(idea)).join("")}
         </body>
         </html>
       `;
@@ -2010,12 +2041,16 @@
 
     exportBtn.addEventListener("click", () => {
       const ideas = normalizeIdeasArray(loadIdeas());
+      const fileName = getActiveJsonFileName();
       const blob = new Blob([JSON.stringify(ideas, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = "ideas_exportadas.json";
+      a.download = fileName;
       a.click();
       URL.revokeObjectURL(a.href);
+
+      setJsonSaveStatus(`Archivo exportado como ${fileName}.`, "status-ok");
+      updateCurrentJsonFileInfo();
     });
 
     importBtn.addEventListener("click", () => {
@@ -2025,6 +2060,8 @@
     importFile.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) return;
+
+      const importedFileName = sanitizeJsonFileName(file.name || AUTO_JSON_FILENAME);
 
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -2038,10 +2075,12 @@
 
           const normalizedData = normalizeIdeasArray(data);
 
+          setActiveJsonFileName(importedFileName);
           saveIdeas(normalizedData);
           selectedIdeaIds.clear();
           resetForm();
           renderIdeas();
+          setJsonSaveStatus(`Datos importados correctamente desde ${importedFileName}.`, "status-ok");
           alert("Datos importados correctamente.");
         } catch {
           alert("No se pudo leer el archivo JSON.");
@@ -2128,7 +2167,7 @@
       });
 
       const description = descriptionLines.join("\n");
-      const location = extra.lugar || extra.empresa || "";
+      const location = extra.lugar || "";
       const uid = `${idea.id}@gestorideas.local`;
       const now = formatDateForICS(new Date());
 
@@ -2159,6 +2198,8 @@
 
     renderDynamicFields({});
     initLinkedJsonFolder();
+    setActiveJsonFileName(getActiveJsonFileName());
+    updateCurrentJsonFileInfo();
     renderIdeas();
 
     window.editIdea = editIdea;
