@@ -2,16 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Ideas" />
-  <meta name="theme-color" content="#2563eb" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <link rel="manifest" href="./manifest_ideas_app.webmanifest" />
-  <link rel="apple-touch-icon" href="./icon-180.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestor de Ideas</title>
   <style>
     :root {
@@ -418,116 +409,16 @@
       .stats {
         grid-template-columns: 1fr;
       }
-      .quick-summary {
-        grid-template-columns: 1fr 1fr;
-      }
     }
-
-    .mobile-note {
-      margin-top: 8px;
-      padding: 8px;
-      border-radius: 6px;
-      background: #fff7ed;
-      border: 1px solid #fdba74;
-      font-size: 9px;
-      color: #9a3412;
-    }
-
-    .quick-summary {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .quick-tile {
-      background: linear-gradient(180deg, #ffffff, #f8fbff);
-      border: 1px solid #dbe7f5;
-      border-radius: 12px;
-      padding: 10px;
-      box-shadow: var(--shadow);
-    }
-
-    .quick-tile .k {
-      display: block;
-      font-size: 10px;
-      color: var(--muted);
-      margin-bottom: 4px;
-    }
-
-    .quick-tile .v {
-      display: block;
-      font-size: 22px;
-      font-weight: bold;
-      line-height: 1.1;
-    }
-
-    .install-box {
-      margin: 10px 0 0;
-      padding: 10px 12px;
-      border-radius: 10px;
-      background: rgba(255,255,255,.14);
-      border: 1px solid rgba(255,255,255,.28);
-      font-size: 10px;
-    }
-
-    .standalone body,
-    body.standalone {
-      background: #eef4fb;
-    }
-
-    body.standalone header {
-      padding-top: calc(16px + env(safe-area-inset-top));
-    }
-
-    body.standalone .container {
-      padding-bottom: calc(18px + env(safe-area-inset-bottom));
-    }
-
-    .offline-chip {
-      display: inline-block;
-      margin-left: 6px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.18);
-      border: 1px solid rgba(255,255,255,.22);
-      font-size: 10px;
-      vertical-align: middle;
-    }
-
-
-    @media (max-width: 900px) {
-      body { font-size: 13px; }
-      header h1 { font-size: 24px; }
-      header p { font-size: 11px; }
-      .container { max-width: 100%; padding: 0 8px 24px; }
-      .card h2 { font-size: 18px; }
-      .card h3 { font-size: 15px; }
-      label, input, textarea, select, button, .actions button, .idea-actions button, .small, .meta { font-size: 12px; }
-      .stat .label { font-size: 10px; }
-      .badge { font-size: 10px; }
-      .idea-title { font-size: 15px; }
-      .selection-count, #visibleCount { font-size: 14px; }
-      input, textarea, select, button { padding: 10px 10px; }
-      .actions button, .idea-actions button { min-height: 40px; }
-    }
-
   </style>
 </head>
 <body>
   <header>
-    <h1>Gestor de Ideas <span id="offlineChip" class="offline-chip" style="display:none;">Modo sin conexión</span></h1>
-    <p>Registro de llamadas, reuniones/visitas y gestión de ideas con plan de acciones.</p>
-    <div class="install-box" id="iosInstallHelp">En iPhone: abre esta página en Safari, pulsa <strong>Compartir</strong> y elige <strong>Añadir a pantalla de inicio</strong>. Después se abrirá como una app, a pantalla completa.</div>
+    <h1>Gestor de Ideas</h1>
+    <p>Registro de llamadas, reuniones/visitas y gestión de ideas con plan de acciones. Compatible con autoguardado en OneDrive.</p>
   </header>
 
   <div class="container">
-    <section class="quick-summary" id="quickSummary">
-      <div class="quick-tile"><span class="k">Pendientes</span><span class="v" id="qsPendientes">0</span></div>
-      <div class="quick-tile"><span class="k">Urgentes</span><span class="v" id="qsUrgentes">0</span></div>
-      <div class="quick-tile"><span class="k">Hoy</span><span class="v" id="qsHoy">0</span></div>
-      <div class="quick-tile"><span class="k">Mañana</span><span class="v" id="qsManana">0</span></div>
-    </section>
     <div class="layout">
       <section class="card">
         <h2 id="formTitle">Nueva idea</h2>
@@ -625,21 +516,20 @@
           <div class="section-mini">
             <h4>Datos</h4>
             <div class="actions">
-              <button type="button" class="btn-primary" id="linkJsonFolderBtn">Guardar automático no disponible en iPhone</button>
-              <button type="button" class="btn-success" id="saveJsonNowBtn">Guardar JSON en OneDrive</button>
-              <button type="button" class="btn-success" id="exportBtn">Exportar JSON copia</button>
-              <button type="button" class="btn-secondary" id="importBtn">Importar JSON desde OneDrive</button>
+              <button type="button" class="btn-primary" id="linkJsonFolderBtn">Vincular carpeta OneDrive / JSON</button>
+              <button type="button" class="btn-success" id="saveJsonNowBtn">Guardar JSON ahora</button>
+              <button type="button" class="btn-success" id="exportBtn">Exportar JSON</button>
+              <button type="button" class="btn-secondary" id="importBtn">Importar JSON</button>
               <button type="button" class="btn-danger" id="clearAllBtn">Vaciar todo</button>
               <input type="file" id="importFile" accept=".json" class="hidden" />
             </div>
             <div class="status-box">
               <strong>Autoguardado JSON</strong>
-              <div id="jsonFolderStatus" class="small">En iPhone usa “Guardar JSON en OneDrive” para sacar una copia a Archivos o OneDrive.</div>
+              <div id="jsonFolderStatus" class="small">Carpeta no seleccionada. Pulsa “Vincular carpeta OneDrive / JSON”.</div>
               <div id="jsonSaveStatus" class="small">Los datos siguen guardándose también en este navegador.</div>
             </div>
-            <div class="mobile-note">Funciones adaptadas para iPhone: almacenamiento local, guardar JSON en Archivos/OneDrive, importar JSON desde Archivos/OneDrive, impresión desde compartir y archivo calendario .ics.</div>
             <div class="small" style="margin-top:8px;">
-              En iPhone no se puede vincular una carpeta fija de OneDrive como en ordenador. Esta versión guarda los datos en el propio navegador y te permite guardar el JSON en Archivos/OneDrive e importarlo cuando quieras.
+              Si eliges una carpeta dentro de <b>OneDrive</b>, el programa guardará automáticamente el archivo <b>ideas.json</b> allí y OneDrive lo sincronizará con la nube. También puedes elegir cualquier otra carpeta local.
             </div>
           </div>
         </div>
@@ -721,7 +611,8 @@
 
   <script>
     const STORAGE_KEY = "gestor_ideas_html_v11";
-    const AUTO_JSON_FILENAME = "ideas.json";
+    const DEFAULT_JSON_FILENAME = "ideas.json";
+    const JSON_FILENAME_KEY = "gestor_ideas_json_filename_v15";
     const LINKED_FS_DB = "gestor_ideas_fs_db";
     const LINKED_FS_STORE = "handles";
     const LINKED_FS_KEY = "json_directory";
@@ -773,11 +664,6 @@
     const ideaList = document.getElementById("ideaList");
     const todayList = document.getElementById("todayList");
     const tomorrowList = document.getElementById("tomorrowList");
-    const qsPendientes = document.getElementById("qsPendientes");
-    const qsUrgentes = document.getElementById("qsUrgentes");
-    const qsHoy = document.getElementById("qsHoy");
-    const qsManana = document.getElementById("qsManana");
-    const offlineChip = document.getElementById("offlineChip");
     const formTitle = document.getElementById("formTitle");
     const saveBtn = document.getElementById("saveBtn");
     const cancelEditBtn = document.getElementById("cancelEditBtn");
@@ -794,6 +680,8 @@
     const importFile = document.getElementById("importFile");
     const linkJsonFolderBtn = document.getElementById("linkJsonFolderBtn");
     const saveJsonNowBtn = document.getElementById("saveJsonNowBtn");
+    const saveAsBtn = document.getElementById("saveAsBtn");
+    const jsonFileNameInput = document.getElementById("jsonFileName");
     const jsonFolderStatus = document.getElementById("jsonFolderStatus");
     const jsonSaveStatus = document.getElementById("jsonSaveStatus");
 
@@ -812,10 +700,37 @@
     let autosaveQueuedIdeas = null;
     let autosaveRunning = false;
 
-    function supportsLinkedJsonAutosave() {
-      const isiPhoneLike = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      if (isiPhoneLike) return false;
+    function sanitizeJsonFilename(name) {
+      const base = String(name || "").trim().replace(/[\/:*?"<>|]+/g, "_").replace(/\s+/g, " ");
+      const cleaned = base || DEFAULT_JSON_FILENAME;
+      return cleaned.toLowerCase().endsWith(".json") ? cleaned : `${cleaned}.json`;
+    }
+
+    function getCurrentJsonFilename() {
+      return sanitizeJsonFilename(jsonFileNameInput?.value || localStorage.getItem(JSON_FILENAME_KEY) || DEFAULT_JSON_FILENAME);
+    }
+
+    function setCurrentJsonFilename(name, persist = true) {
+      const safeName = sanitizeJsonFilename(name);
+      if (jsonFileNameInput) jsonFileNameInput.value = safeName;
+      if (persist) localStorage.setItem(JSON_FILENAME_KEY, safeName);
+      return safeName;
+    }
+
+    function supportsSaveFilePicker() {
+      return !!window.showSaveFilePicker;
+    }
+
+    function supportsOpenFilePicker() {
+      return !!window.showOpenFilePicker;
+    }
+
+    function supportsDirectoryLinkedAutosave() {
       return !!(window.showDirectoryPicker && window.indexedDB);
+    }
+
+    function supportsLinkedJsonAutosave() {
+      return supportsDirectoryLinkedAutosave();
     }
 
     function setJsonFolderStatus(message, level = "") {
@@ -882,7 +797,7 @@
 
     async function getLinkedJsonFileHandle(createIfMissing = true) {
       if (!linkedDirectoryHandle) return null;
-      return await linkedDirectoryHandle.getFileHandle(AUTO_JSON_FILENAME, { create: createIfMissing });
+      return await linkedDirectoryHandle.getFileHandle(getCurrentJsonFilename(), { create: createIfMissing });
     }
 
     async function writeIdeasToLinkedJson(ideas) {
@@ -902,8 +817,9 @@
       await writable.write(JSON.stringify(normalizeIdeasArray(ideas), null, 2));
       await writable.close();
 
-      setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${AUTO_JSON_FILENAME}`, "status-ok");
-      setJsonSaveStatus(`Guardado automático correcto: ${AUTO_JSON_FILENAME}`, "status-ok");
+      const filename = getCurrentJsonFilename();
+      setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${filename}`, "status-ok");
+      setJsonSaveStatus(`Guardado automático correcto: ${filename}. Si la carpeta pertenece a OneDrive, quedará sincronizado en la nube.`, "status-ok");
       return true;
     }
 
@@ -929,12 +845,12 @@
 
     function scheduleLinkedJsonAutosave(ideas) {
       if (!linkedDirectoryHandle) {
-        setJsonSaveStatus("Los datos se guardan en este navegador. En iPhone usa “Guardar JSON en OneDrive” para tener una copia externa.", "status-warn");
+        setJsonSaveStatus(`Los datos se guardan en este navegador. Si quieres, vincula una carpeta para crear ${getCurrentJsonFilename()} automáticamente.`, "status-warn");
         return;
       }
 
       autosaveQueuedIdeas = normalizeIdeasArray(ideas);
-      setJsonSaveStatus(`Cambios pendientes de guardar en ${AUTO_JSON_FILENAME}...`, "status-warn");
+      setJsonSaveStatus(`Cambios pendientes de guardar en ${getCurrentJsonFilename()}...`, "status-warn");
 
       clearTimeout(autosaveTimer);
       autosaveTimer = setTimeout(() => {
@@ -951,7 +867,7 @@
       }
 
       if (!linkedDirectoryHandle) {
-        alert("Primero selecciona una carpeta JSON.");
+        alert("Primero vincula una carpeta OneDrive o una carpeta JSON local.");
         return;
       }
 
@@ -968,7 +884,7 @@
 
     async function chooseLinkedJsonFolder() {
       if (!supportsLinkedJsonAutosave()) {
-        alert("Este navegador no permite fijar una carpeta de autoguardado JSON. Puedes seguir usando Exportar JSON copia manualmente.");
+        alert("Este navegador no permite fijar una carpeta de autoguardado. Puedes seguir usando Exportar JSON manualmente, o abrir el archivo en Chrome/Edge.");
         return;
       }
 
@@ -984,8 +900,9 @@
         linkedDirectoryHandle = directoryHandle;
         await saveDirectoryHandleToDB(directoryHandle);
 
-        setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${AUTO_JSON_FILENAME}`, "status-ok");
-        setJsonSaveStatus(`Preparado para guardar automáticamente en ${AUTO_JSON_FILENAME}.`, "status-ok");
+        const filename = getCurrentJsonFilename();
+        setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${filename}`, "status-ok");
+        setJsonSaveStatus(`Preparado para guardar automáticamente en ${filename}.`, "status-ok");
 
         const fileHandle = await getLinkedJsonFileHandle(true);
         const file = await fileHandle.getFile();
@@ -996,12 +913,13 @@
             const parsed = JSON.parse(content);
             const linkedIdeas = normalizeIdeasArray(parsed);
 
-            if (Array.isArray(parsed) && linkedIdeas.length && confirm(`Se ha encontrado ${AUTO_JSON_FILENAME} en la carpeta seleccionada. ¿Quieres cargar ese archivo ahora en el programa?`)) {
+            const filename = getCurrentJsonFilename();
+            if (Array.isArray(parsed) && linkedIdeas.length && confirm(`Se ha encontrado ${filename} en la carpeta seleccionada. ¿Quieres cargar ese archivo ahora en el programa?`)) {
               saveIdeas(linkedIdeas);
               selectedIdeaIds.clear();
               resetForm();
               renderIdeas();
-              setJsonSaveStatus(`Archivo ${AUTO_JSON_FILENAME} cargado y vinculado correctamente.`, "status-ok");
+              setJsonSaveStatus(`Archivo ${getCurrentJsonFilename()} cargado y vinculado correctamente.`, "status-ok");
               return;
             }
           } catch {
@@ -1017,10 +935,16 @@
       }
     }
 
+
+    async function chooseOneDriveJsonFolder() {
+      alert("Selecciona una carpeta dentro de OneDrive (por ejemplo: OneDrive\GestorIdeas). Desde ese momento el archivo ideas.json se guardará ahí automáticamente y OneDrive lo sincronizará con la nube.");
+      await chooseLinkedJsonFolder();
+    }
+
     async function initLinkedJsonFolder() {
       if (!supportsLinkedJsonAutosave()) {
         setJsonFolderStatus("Este navegador no permite fijar una carpeta de guardado automático JSON.", "status-warn");
-        setJsonSaveStatus("Puedes seguir usando Exportar JSON copia manualmente y los datos siguen guardándose en este navegador.", "status-warn");
+        setJsonSaveStatus("Puedes seguir usando Exportar JSON manualmente y los datos siguen guardándose en este navegador.", "status-warn");
         return;
       }
 
@@ -1028,24 +952,103 @@
         linkedDirectoryHandle = await loadDirectoryHandleFromDB();
 
         if (!linkedDirectoryHandle) {
-          setJsonFolderStatus("En iPhone usa “Guardar JSON en OneDrive” para sacar una copia a Archivos o OneDrive.", "status-warn");
-          setJsonSaveStatus("Los datos se guardan en este navegador. En iPhone usa “Guardar JSON en OneDrive” para tener una copia externa.", "status-warn");
+          setJsonFolderStatus("Carpeta no seleccionada. Pulsa “Vincular carpeta OneDrive / JSON”.", "status-warn");
+          setJsonSaveStatus(`Los datos se guardan en este navegador. Si quieres, vincula una carpeta para crear ${getCurrentJsonFilename()} automáticamente.`, "status-warn");
           return;
         }
 
         const permission = await getDirectoryPermissionState(linkedDirectoryHandle);
-        setJsonFolderStatus(`Carpeta recordada: ${linkedDirectoryHandle.name} · archivo ${AUTO_JSON_FILENAME}`, permission === "granted" ? "status-ok" : "status-warn");
+        const filename = getCurrentJsonFilename();
+        setJsonFolderStatus(`Carpeta recordada: ${linkedDirectoryHandle.name} · archivo ${filename}`, permission === "granted" ? "status-ok" : "status-warn");
 
         if (permission === "granted") {
-          setJsonSaveStatus(`Autoguardado activo en ${AUTO_JSON_FILENAME}.`, "status-ok");
+          setJsonSaveStatus(`Autoguardado activo en ${filename}.`, "status-ok");
         } else {
-          setJsonSaveStatus("La carpeta está recordada, pero quizá tengas que pulsar “Guardar JSON en OneDrive” o volver a elegir la carpeta para dar permiso.", "status-warn");
+          setJsonSaveStatus("La carpeta está recordada, pero quizá tengas que pulsar “Guardar JSON ahora” o volver a elegir la carpeta para dar permiso.", "status-warn");
         }
       } catch (error) {
         console.error(error);
         setJsonFolderStatus("No se pudo recuperar la carpeta JSON guardada anteriormente.", "status-error");
         setJsonSaveStatus("Puedes volver a seleccionarla cuando quieras.", "status-warn");
       }
+    }
+
+    async function saveJsonAsFile() {
+      const ideas = normalizeIdeasArray(loadIdeas());
+      const filename = getCurrentJsonFilename();
+
+      if (supportsSaveFilePicker()) {
+        try {
+          const fileHandle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: "Archivo JSON",
+              accept: { "application/json": [".json"] }
+            }]
+          });
+
+          const writable = await fileHandle.createWritable();
+          await writable.write(JSON.stringify(ideas, null, 2));
+          await writable.close();
+
+          setCurrentJsonFilename(fileHandle.name);
+          setJsonSaveStatus(`Archivo guardado manualmente como ${getCurrentJsonFilename()}.`, "status-ok");
+          return true;
+        } catch (error) {
+          if (error && error.name === "AbortError") return false;
+          console.error(error);
+          alert("No se pudo guardar el archivo JSON.");
+          return false;
+        }
+      }
+
+      const blob = new Blob([JSON.stringify(ideas, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setJsonSaveStatus(`Archivo exportado como ${filename}.`, "status-ok");
+      return true;
+    }
+
+    async function importJsonWithPicker() {
+      if (supportsOpenFilePicker()) {
+        try {
+          const [fileHandle] = await window.showOpenFilePicker({
+            multiple: false,
+            types: [{
+              description: "Archivo JSON",
+              accept: { "application/json": [".json"] }
+            }]
+          });
+
+          const file = await fileHandle.getFile();
+          const text = await file.text();
+          const data = JSON.parse(text);
+
+          if (!Array.isArray(data)) {
+            alert("El archivo no tiene un formato válido.");
+            return;
+          }
+
+          setCurrentJsonFilename(file.name);
+          const normalizedData = normalizeIdeasArray(data);
+          saveIdeas(normalizedData);
+          selectedIdeaIds.clear();
+          resetForm();
+          renderIdeas();
+          setJsonSaveStatus(`Datos importados correctamente desde ${getCurrentJsonFilename()}.`, "status-ok");
+          return;
+        } catch (error) {
+          if (error && error.name === "AbortError") return;
+          console.error(error);
+          alert("No se pudo leer el archivo JSON.");
+          return;
+        }
+      }
+
+      importFile.click();
     }
 
     function loadIdeas() {
@@ -1495,28 +1498,6 @@
       ideasVisibles.forEach(idea => selectedIdeaIds.add(idea.id));
     }
 
-
-    function renderQuickSummary() {
-      const ideas = normalizeIdeasArray(loadIdeas());
-      const pendientes = ideas.filter(i => i.estado === "pendiente").length;
-      const urgentes = ideas.filter(i => i.prioridad === "urgente" && i.estado !== "hecha" && i.estado !== "descartada").length;
-      const hoy = ideas.filter(i => isAgendaType(i.tipo) && i.fecha === todayStr() && i.estado !== "hecha" && i.estado !== "descartada").length;
-      const manana = ideas.filter(i => isAgendaType(i.tipo) && i.fecha === tomorrowStr() && i.estado !== "hecha" && i.estado !== "descartada").length;
-
-      qsPendientes.textContent = pendientes;
-      qsUrgentes.textContent = urgentes;
-      qsHoy.textContent = hoy;
-      qsManana.textContent = manana;
-
-      const badgeTotal = hoy + manana;
-      document.title = badgeTotal > 0 ? `Ideas (${badgeTotal})` : "Gestor de Ideas";
-    }
-
-    function updateConnectionState() {
-      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
-      offlineChip.style.display = offline ? "inline-block" : "none";
-    }
-
     function renderStats() {
       const ideas = normalizeIdeasArray(loadIdeas());
       statTotal.textContent = ideas.length;
@@ -1629,7 +1610,6 @@
         renderStats();
         renderToday();
         renderTomorrow();
-        renderQuickSummary();
         updateSelectionCount();
         return;
       }
@@ -1689,7 +1669,6 @@
       renderStats();
       renderToday();
       renderTomorrow();
-      renderQuickSummary();
       updateSelectionCount();
     }
 
@@ -1898,120 +1877,6 @@
       return colors[est] || { bg: "#f3f4f6", color: "#374151" };
     }
 
-
-    function isIPhoneLike() {
-      return /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    }
-
-    function getIdeasJsonBlob() {
-      const ideas = normalizeIdeasArray(loadIdeas());
-      return new Blob([JSON.stringify(ideas, null, 2)], { type: "application/json" });
-    }
-
-    async function saveJsonToOneDriveOrFiles(preferredFilename = "ideas.json") {
-      const blob = getIdeasJsonBlob();
-      const file = new File([blob], preferredFilename, { type: "application/json" });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: preferredFilename,
-            text: "Elige Guardar en Archivos y después la ubicación de OneDrive."
-          });
-          setJsonSaveStatus("JSON preparado para guardar en Archivos/OneDrive.", "status-ok");
-          return true;
-        } catch (error) {
-          if (error && error.name === "AbortError") return false;
-        }
-      }
-
-      downloadBlobWithFallback(blob, preferredFilename, "application/json");
-      setJsonSaveStatus("JSON exportado. Si estás en iPhone, guárdalo desde Archivos en OneDrive.", "status-warn");
-      return true;
-    }
-
-    async function importJsonFromFilesOrOneDrive() {
-      if (window.showOpenFilePicker) {
-        try {
-          const [fileHandle] = await window.showOpenFilePicker({
-            multiple: false,
-            types: [{
-              description: "Archivo JSON",
-              accept: { "application/json": [".json"] }
-            }]
-          });
-          const file = await fileHandle.getFile();
-          await importIdeasFromFile(file);
-          return;
-        } catch (error) {
-          if (error && error.name === "AbortError") return;
-        }
-      }
-
-      importFile.click();
-    }
-
-    async function importIdeasFromFile(file) {
-      if (!file) return;
-
-      const content = await file.text();
-      const data = JSON.parse(content);
-
-      if (!Array.isArray(data)) {
-        throw new Error("Formato inválido");
-      }
-
-      const normalizedData = normalizeIdeasArray(data);
-      saveIdeas(normalizedData);
-      selectedIdeaIds.clear();
-      resetForm();
-      renderIdeas();
-      setJsonSaveStatus(`JSON importado correctamente${file.name ? `: ${file.name}` : ""}.`, "status-ok");
-      alert("Datos importados correctamente.");
-    }
-
-    function downloadBlobWithFallback(blob, filename, mimeType = "") {
-      const file = new File([blob], filename, { type: mimeType || blob.type || "application/octet-stream" });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({
-          files: [file],
-          title: filename
-        }).catch(() => {
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = filename;
-          a.click();
-          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-        });
-        return;
-      }
-
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    }
-
-    function openPrintDocument(html) {
-      const printWindow = window.open("", "_blank");
-      if (printWindow) {
-        printWindow.document.open();
-        printWindow.document.write(html);
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => printWindow.print(), 500);
-        return;
-      }
-
-      const blob = new Blob([html], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      window.location.href = url;
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-    }
-
     function printSelectedToPDF() {
       const ideas = getSelectedIdeas();
       if (!ideas.length) {
@@ -2020,7 +1885,12 @@
       }
 
       const html = buildPrintDocument("Ideas seleccionadas", ideas, "pdf");
-      openPrintDocument(html);
+      const win = window.open("", "_blank");
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 300);
     }
 
     function exportSelectedToWord() {
@@ -2032,7 +1902,11 @@
 
       const html = buildPrintDocument("Ideas seleccionadas", ideas, "word");
       const blob = new Blob(["﻿" + html], { type: "application/msword" });
-      downloadBlobWithFallback(blob, "ideas_seleccionadas.doc", "application/msword");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "ideas_seleccionadas.doc";
+      a.click();
+      URL.revokeObjectURL(a.href);
     }
 
     function printCurrentIdeaToPDF() {
@@ -2040,7 +1914,12 @@
       if (!current) return;
 
       const html = buildPrintDocument(`Idea: ${current.titulo}`, [current], "pdf");
-      openPrintDocument(html);
+      const win = window.open("", "_blank");
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 300);
     }
 
     function exportCurrentIdeaToWord() {
@@ -2049,7 +1928,11 @@
 
       const html = buildPrintDocument(`Idea: ${current.titulo}`, [current], "word");
       const blob = new Blob(["﻿" + html], { type: "application/msword" });
-      downloadBlobWithFallback(blob, `idea_${(current.titulo || 'sin_titulo').replace(/[\/:*?"<>|]/g, "_")}.doc`, "application/msword");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `idea_${(current.titulo || 'sin_titulo').replace(/[\/:*?"<>|]/g, "_")}.doc`;
+      a.click();
+      URL.revokeObjectURL(a.href);
     }
 
     function buildExcelIdeaBlock(idea) {
@@ -2132,7 +2015,11 @@
       `;
 
       const blob = new Blob(["﻿" + html], { type: "application/vnd.ms-excel;charset=utf-8;" });
-      downloadBlobWithFallback(blob, "ideas_seleccionadas.xls", "application/vnd.ms-excel;charset=utf-8;");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "ideas_seleccionadas.xls";
+      a.click();
+      URL.revokeObjectURL(a.href);
     }
 
     form.addEventListener("submit", (e) => {
@@ -2183,14 +2070,8 @@
     exportExcelBtn.addEventListener("click", exportSelectedToExcel);
     printCurrentPdfBtn.addEventListener("click", printCurrentIdeaToPDF);
     printCurrentWordBtn.addEventListener("click", exportCurrentIdeaToWord);
-    linkJsonFolderBtn.addEventListener("click", () => {
-      alert("En iPhone esta función no está disponible. Usa “Exportar JSON copia” para guardar una copia y “Importar JSON desde OneDrive” para recuperarla.");
-    });
-    saveJsonNowBtn.addEventListener("click", () => {
-      const ideas = normalizeIdeasArray(loadIdeas());
-      const blob = new Blob([JSON.stringify(ideas, null, 2)], { type: "application/json" });
-      downloadBlobWithFallback(blob, "ideas.json", "application/json");
-    });
+    linkJsonFolderBtn.addEventListener("click", chooseOneDriveJsonFolder);
+    saveJsonNowBtn.addEventListener("click", forceSaveLinkedJsonNow);
 
     function editIdea(id) {
       const ideas = normalizeIdeasArray(loadIdeas());
@@ -2247,24 +2128,53 @@
       renderIdeas();
     }
 
-    exportBtn.addEventListener("click", async () => {
-      await saveJsonToOneDriveOrFiles("ideas_exportadas.json");
+    exportBtn.addEventListener("click", () => {
+      const ideas = normalizeIdeasArray(loadIdeas());
+      const filename = getCurrentJsonFilename();
+      const blob = new Blob([JSON.stringify(ideas, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setJsonSaveStatus(`Archivo exportado como ${filename}.`, "status-ok");
     });
 
-    importBtn.addEventListener("click", async () => {
-      await importJsonFromFilesOrOneDrive();
+    saveAsBtn.addEventListener("click", saveJsonAsFile);
+
+    importBtn.addEventListener("click", () => {
+      importJsonWithPicker();
     });
 
-    importFile.addEventListener("change", async (e) => {
+    importFile.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      try {
-        await importIdeasFromFile(file);
-      } catch {
-        alert("No se pudo leer el archivo JSON.");
-      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = JSON.parse(event.target.result);
 
+          if (!Array.isArray(data)) {
+            alert("El archivo no tiene un formato válido.");
+            return;
+          }
+
+          const normalizedData = normalizeIdeasArray(data);
+
+          setCurrentJsonFilename(file.name);
+          saveIdeas(normalizedData);
+          selectedIdeaIds.clear();
+          resetForm();
+          renderIdeas();
+          setJsonSaveStatus(`Datos importados correctamente desde ${getCurrentJsonFilename()}.`, "status-ok");
+          alert("Datos importados correctamente.");
+        } catch {
+          alert("No se pudo leer el archivo JSON.");
+        }
+      };
+
+      reader.readAsText(file);
       importFile.value = "";
     });
 
@@ -2373,28 +2283,25 @@
       URL.revokeObjectURL(a.href);
     }
 
-    if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) {
-      document.body.classList.add("standalone");
-      document.getElementById("iosInstallHelp").style.display = "none";
-    }
-    if (window.navigator && window.navigator.standalone) {
-      document.body.classList.add("standalone");
-      document.getElementById("iosInstallHelp").style.display = "none";
-    }
+    setCurrentJsonFilename(localStorage.getItem(JSON_FILENAME_KEY) || DEFAULT_JSON_FILENAME, false);
 
-    window.addEventListener("online", updateConnectionState);
-    window.addEventListener("offline", updateConnectionState);
+    jsonFileNameInput.addEventListener("change", () => {
+      const current = setCurrentJsonFilename(jsonFileNameInput.value);
+      if (linkedDirectoryHandle) {
+        setJsonSaveStatus(`Se usará el archivo ${current} para el siguiente guardado automático.`, "status-warn");
+        scheduleLinkedJsonAutosave(loadIdeas());
+      } else {
+        setJsonSaveStatus(`Nombre de archivo preparado: ${current}.`, "status-ok");
+      }
+    });
+
+    jsonFileNameInput.addEventListener("blur", () => {
+      setCurrentJsonFilename(jsonFileNameInput.value);
+    });
 
     renderDynamicFields({});
-    initLinkedJsonFolder();
     renderIdeas();
-    updateConnectionState();
-
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./service-worker-ideas-app.js").catch(() => {});
-      });
-    }
+    initLinkedJsonFolder();
 
     window.editIdea = editIdea;
     window.markDone = markDone;
