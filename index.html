@@ -386,6 +386,62 @@
       flex: 1;
     }
 
+    .editor-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 5px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #f8fafc;
+    }
+
+    .editor-toolbar button,
+    .editor-toolbar input[type="color"] {
+      width: auto;
+      min-width: 34px;
+      padding: 4px 6px;
+      font-size: 10px;
+    }
+
+    .editor-toolbar input[type="color"] {
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: white;
+      padding: 2px;
+      cursor: pointer;
+    }
+
+    .rich-text {
+      min-height: 80px;
+      resize: vertical;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 6px;
+      background: white;
+      font-size: 9px;
+      line-height: 1.4;
+    }
+
+    .rich-text:empty:before {
+      content: attr(data-placeholder);
+      color: #9ca3af;
+    }
+
+    .rich-text b,
+    .rich-text strong {
+      font-weight: 700;
+    }
+
+    .rich-text ul,
+    .rich-text ol {
+      margin: 4px 0 4px 18px;
+      padding: 0;
+    }
+
     @media (max-width: 1100px) {
       .layout {
         grid-template-columns: 1fr;
@@ -443,7 +499,15 @@
           <input id="titulo" type="text" placeholder="Escribe un título" required />
 
           <label for="descripcion">Descripción</label>
-          <textarea id="descripcion" placeholder="Detalles, observaciones o contexto..."></textarea>
+          <div class="editor-toolbar">
+            <button type="button" onclick="formatText('bold')"><b>B</b></button>
+            <button type="button" onclick="formatText('italic')"><i>I</i></button>
+            <button type="button" onclick="formatText('underline')"><u>U</u></button>
+            <button type="button" onclick="formatText('insertUnorderedList')">• Lista</button>
+            <button type="button" onclick="formatText('removeFormat')">Limpiar</button>
+            <input type="color" id="descripcionColor" value="#1f2937" onchange="formatText('foreColor', this.value)" title="Color del texto" />
+          </div>
+          <div id="descripcion" class="rich-text" contenteditable="true" data-placeholder="Detalles, observaciones o contexto..."></div>
 
           <div id="bloqueFechaGeneral">
             <div class="row-2">
@@ -1045,6 +1109,65 @@
         .replace(/"/g, "&quot;");
     }
 
+    function sanitizeRichText(html) {
+      const container = document.createElement("div");
+      container.innerHTML = String(html || "");
+
+      const allowedTags = new Set(["B", "STRONG", "I", "EM", "U", "BR", "DIV", "P", "UL", "OL", "LI", "SPAN"]);
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, null);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+
+      nodes.forEach(node => {
+        if (!allowedTags.has(node.tagName)) {
+          const parent = node.parentNode;
+          while (node.firstChild) parent.insertBefore(node.firstChild, node);
+          parent.removeChild(node);
+          return;
+        }
+
+        [...node.attributes].forEach(attr => {
+          const name = attr.name.toLowerCase();
+          if (name !== "style") node.removeAttribute(attr.name);
+        });
+
+        if (node.hasAttribute("style")) {
+          const style = node.getAttribute("style") || "";
+          const colorMatch = style.match(/color\s*:\s*([^;]+)/i);
+          if (colorMatch) {
+            node.setAttribute("style", `color:${colorMatch[1].trim()}`);
+          } else {
+            node.removeAttribute("style");
+          }
+        }
+      });
+
+      return container.innerHTML.trim();
+    }
+
+    function getDescripcionHtml() {
+      return sanitizeRichText(descripcion.innerHTML);
+    }
+
+    function setDescripcionHtml(html) {
+      descripcion.innerHTML = sanitizeRichText(html || "");
+    }
+
+    function formatText(command, value = null) {
+      descripcion.focus();
+      document.execCommand(command, false, value);
+      descripcion.dispatchEvent(new Event("input"));
+    }
+
+    function formatTaskText(source, command, value = null) {
+      const taskCard = source.closest('.project-task');
+      const editable = taskCard ? taskCard.querySelector('.task-descripcion') : null;
+      if (!editable) return;
+      editable.focus();
+      document.execCommand(command, false, value);
+      editable.dispatchEvent(new Event('input'));
+    }
+
     function normalizeText(value) {
       return String(value || "")
         .toLowerCase()
@@ -1136,7 +1259,7 @@
       const taskNodes = document.querySelectorAll(".project-task");
       const tasks = [];
       taskNodes.forEach(node => {
-        const descripcion = node.querySelector(".task-descripcion")?.value.trim() || "";
+        const descripcion = sanitizeRichText(node.querySelector(".task-descripcion")?.innerHTML || "");
         const proveedor = node.querySelector(".task-proveedor")?.value.trim() || "";
         const estado = node.querySelector(".task-estado")?.value || "pendiente";
         tasks.push({ descripcion, proveedor, estado });
@@ -1153,7 +1276,15 @@
           </div>
 
           <label>Descripción</label>
-          <textarea class="task-descripcion" placeholder="Describe la acción">${escapeHtml(task.descripcion || "")}</textarea>
+          <div class="editor-toolbar" style="margin-top:4px; margin-bottom:4px;">
+              <button type="button" onclick="formatTaskText(this, 'bold')"><b>B</b></button>
+              <button type="button" onclick="formatTaskText(this, 'italic')"><i>I</i></button>
+              <button type="button" onclick="formatTaskText(this, 'underline')"><u>U</u></button>
+              <button type="button" onclick="formatTaskText(this, 'insertUnorderedList')">• Lista</button>
+              <button type="button" onclick="formatTaskText(this, 'removeFormat')">Limpiar</button>
+              <input type="color" value="#1f2937" onchange="formatTaskText(this, 'foreColor', this.value)" title="Color del texto" />
+            </div>
+            <div class="task-descripcion rich-text" contenteditable="true" data-placeholder="Describe la acción">${sanitizeRichText(task.descripcion || "")}</div>
 
           <div class="row-2">
             <div>
@@ -1315,6 +1446,7 @@
     function resetForm() {
       form.reset();
       ideaId.value = "";
+      setDescripcionHtml("");
       tipo.value = "llamada";
       prioridad.value = "media";
       estado.value = "pendiente";
@@ -1339,7 +1471,7 @@
         id: ideaId.value ? Number(ideaId.value) : generateId(),
         tipo: tipo.value,
         titulo: titulo.value.trim(),
-        descripcion: descripcion.value.trim(),
+        descripcion: getDescripcionHtml(),
         fecha: projectType ? "" : (fecha.value || ""),
         hora: projectType ? "" : (hora.value || ""),
         fechaInicio: projectType ? (fechaInicio.value || "") : "",
@@ -1525,7 +1657,7 @@
               ? acciones.map((t, index) => `
                   <div style="margin-top:8px; padding:8px; border:1px solid #e5e7eb; border-radius:8px; background:white;">
                     <div><strong>Acción ${index + 1}</strong></div>
-                    <div><strong>Descripción:</strong> ${escapeHtml(t.descripcion || "-")}</div>
+                    <div><strong>Descripción:</strong> ${t.descripcion || "-"}</div>
                     <div><strong>Proveedor:</strong> ${escapeHtml(t.proveedor || "-")}</div>
                     <div><strong>Estado:</strong> ${escapeHtml(formatEstado(t.estado || "-"))}</div>
                   </div>
@@ -1599,7 +1731,7 @@
               <div class="small">ID: ${idea.id}</div>
             </div>
 
-            <div class="preserve-lines">${escapeHtml(idea.descripcion || "Sin descripción")}</div>
+            <div class="preserve-lines">${idea.descripcion || "Sin descripción"}</div>
 
             <div class="meta" style="margin-top:8px;">
               ${fechaTexto}<br>
@@ -1676,7 +1808,7 @@
           </div>
 
           <div><strong>Descripción:</strong></div>
-          <div class="preserve-lines">${escapeHtml(idea.descripcion || "-")}</div>
+          <div class="preserve-lines">${idea.descripcion || "-"}</div>
 
           <div class="meta">
             ${isProjectType(idea.tipo)
@@ -1695,7 +1827,7 @@
                       <div style="margin-top:8px; padding:8px; border:1px solid #e5e7eb; border-radius:8px; background:white;">
                         <div><strong>Acción ${index + 1}</strong></div>
                         <div><strong>Descripción:</strong></div>
-                        <div class="preserve-lines">${escapeHtml(a.descripcion || "-")}</div>
+                        <div class="preserve-lines">${a.descripcion || "-"}</div>
                         <div><strong>Proveedor:</strong> ${escapeHtml(a.proveedor || "-")}</div>
                         <div><strong>Estado:</strong> ${escapeHtml(formatEstado(a.estado || "-"))}</div>
                       </div>
@@ -2018,7 +2150,7 @@
       ideaId.value = idea.id;
       tipo.value = idea.tipo;
       titulo.value = idea.titulo || "";
-      descripcion.value = idea.descripcion || "";
+      descripcion.innerHTML = idea.descripcion || "";
       fecha.value = idea.fecha || "";
       hora.value = idea.hora || "";
       fechaInicio.value = idea.fechaInicio || "";
