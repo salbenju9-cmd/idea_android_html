@@ -506,6 +506,9 @@
             <button type="button" onclick="formatText('insertUnorderedList')">• Lista</button>
             <button type="button" onclick="formatText('removeFormat')">Limpiar</button>
             <input type="color" id="descripcionColor" value="#1f2937" onchange="formatText('foreColor', this.value)" title="Color del texto" />
+            <button type="button" title="Insertar aprobado" onclick="insertSticker('descripcion', '✔️')">✔️</button>
+            <button type="button" title="Insertar importante" onclick="insertSticker('descripcion', '⚠️')">⚠️</button>
+            <button type="button" title="Insertar no aprobado" onclick="insertSticker('descripcion', '❌')">❌</button>
           </div>
           <div id="descripcion" class="rich-text" contenteditable="true" data-placeholder="Detalles, observaciones o contexto..."></div>
 
@@ -1168,6 +1171,23 @@
       editable.dispatchEvent(new Event('input'));
     }
 
+    function insertSticker(target, symbol) {
+      let editable = null;
+
+      if (target === 'descripcion') {
+        editable = descripcion;
+      } else if (target && typeof target.closest === 'function') {
+        const taskCard = target.closest('.project-task');
+        editable = taskCard ? taskCard.querySelector('.task-descripcion') : null;
+      }
+
+      if (!editable) return;
+
+      editable.focus();
+      document.execCommand('insertText', false, `${symbol} `);
+      editable.dispatchEvent(new Event('input'));
+    }
+
     function normalizeText(value) {
       return String(value || "")
         .toLowerCase()
@@ -1283,6 +1303,9 @@
               <button type="button" onclick="formatTaskText(this, 'insertUnorderedList')">• Lista</button>
               <button type="button" onclick="formatTaskText(this, 'removeFormat')">Limpiar</button>
               <input type="color" value="#1f2937" onchange="formatTaskText(this, 'foreColor', this.value)" title="Color del texto" />
+              <button type="button" title="Insertar aprobado" onclick="insertSticker(this, '✔️')">✔️</button>
+              <button type="button" title="Insertar importante" onclick="insertSticker(this, '⚠️')">⚠️</button>
+              <button type="button" title="Insertar no aprobado" onclick="insertSticker(this, '❌')">❌</button>
             </div>
             <div class="task-descripcion rich-text" contenteditable="true" data-placeholder="Describe la acción">${sanitizeRichText(task.descripcion || "")}</div>
 
@@ -2370,4 +2393,3 @@
   </script>
 </body>
 </html>
-
