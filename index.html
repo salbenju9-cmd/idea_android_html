@@ -45,18 +45,18 @@
     header p {
       margin: 0;
       opacity: 0.95;
-      font-size: 9px;
+      font-size: 10.5px;
     }
 
     .container {
-      max-width: 1550px;
+      max-width: 1200px;
       margin: 12px auto;
       padding: 0 8px 16px;
     }
 
     .layout {
       display: grid;
-      grid-template-columns: 440px 1fr;
+      grid-template-columns: 1fr;
       gap: 10px;
       align-items: start;
     }
@@ -76,7 +76,7 @@
       display: block;
       font-weight: bold;
       margin: 6px 0 3px;
-      font-size: 9px;
+      font-size: 10.5px;
     }
 
     input, textarea, select, button {
@@ -84,7 +84,7 @@
       padding: 5px 6px;
       border-radius: 6px;
       border: 1px solid var(--line);
-      font-size: 9px;
+      font-size: 10.5px;
       font-family: inherit;
     }
 
@@ -127,7 +127,7 @@
     .actions button {
       width: auto;
       min-width: 90px;
-      font-size: 9px;
+      font-size: 10.5px;
       padding: 5px 7px;
     }
 
@@ -184,7 +184,7 @@
     .selection-toolbar button {
       width: auto;
       min-width: 100px;
-      font-size: 9px;
+      font-size: 10.5px;
       padding: 5px 7px;
     }
 
@@ -279,13 +279,31 @@
       border-radius: 6px;
       border: 1px solid #e5e7eb;
       background: #f8fafc;
-      font-size: 9px;
+      font-size: 10.5px;
       color: #374151;
       white-space: pre-wrap;
     }
 
     .preserve-lines {
       white-space: pre-wrap;
+      font-size: 10.5px;
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.4;
+    }
+
+    .rich-content {
+      white-space: pre-wrap;
+    }
+
+    .rich-content span,
+    .rich-content b,
+    .rich-content strong,
+    .rich-content i,
+    .rich-content em,
+    .rich-content u {
+      font-size: inherit;
+      line-height: inherit;
+      font-family: inherit;
     }
 
     .idea-actions {
@@ -298,7 +316,7 @@
     .idea-actions button {
       width: auto;
       padding: 5px 7px;
-      font-size: 9px;
+      font-size: 10.5px;
     }
 
     .empty {
@@ -308,7 +326,7 @@
       border: 1px dashed var(--line);
       border-radius: 8px;
       background: #fafafa;
-      font-size: 9px;
+      font-size: 10.5px;
     }
 
     .hidden {
@@ -334,7 +352,7 @@
     .status-box strong {
       display: block;
       margin-bottom: 4px;
-      font-size: 9px;
+      font-size: 10.5px;
       color: #1e40af;
     }
 
@@ -369,7 +387,7 @@
       background: var(--danger);
       color: white;
       border-radius: 6px;
-      font-size: 9px;
+      font-size: 10.5px;
     }
 
     .select-box {
@@ -422,8 +440,10 @@
       border-radius: 6px;
       padding: 6px;
       background: white;
-      font-size: 9px;
+      font-size: 10.5px;
+      font-family: Arial, Helvetica, sans-serif;
       line-height: 1.4;
+      white-space: pre-wrap;
     }
 
     .rich-text:empty:before {
@@ -505,7 +525,12 @@
             <button type="button" onclick="formatText('underline')"><u>U</u></button>
             <button type="button" onclick="formatText('insertUnorderedList')">• Lista</button>
             <button type="button" onclick="formatText('removeFormat')">Limpiar</button>
-            <input type="color" id="descripcionColor" value="#1f2937" onchange="formatText('foreColor', this.value)" title="Color del texto" />
+            <span class="toolbar-label">Color:</span>
+            <button type="button" class="color-chip color-black" title="Negro" onclick="formatText('foreColor','#1f2937')">N</button>
+            <button type="button" class="color-chip color-red" title="Rojo" onclick="formatText('foreColor','#dc2626')">R</button>
+            <button type="button" class="color-chip color-blue" title="Azul" onclick="formatText('foreColor','#2563eb')">A</button>
+            <button type="button" class="color-chip color-green" title="Verde" onclick="formatText('foreColor','#16a34a')">V</button>
+            <input type="color" id="descripcionColor" value="#1f2937" onchange="formatText('foreColor', this.value)" title="Más colores" />
             <button type="button" title="Insertar aprobado" onclick="insertSticker('descripcion', '✔️')">✔️</button>
             <button type="button" title="Insertar importante" onclick="insertSticker('descripcion', '⚠️')">⚠️</button>
             <button type="button" title="Insertar no aprobado" onclick="insertSticker('descripcion', '❌')">❌</button>
@@ -1116,7 +1141,7 @@
       const container = document.createElement("div");
       container.innerHTML = String(html || "");
 
-      const allowedTags = new Set(["B", "STRONG", "I", "EM", "U", "BR", "DIV", "P", "UL", "OL", "LI", "SPAN"]);
+      const allowedTags = new Set(["B", "STRONG", "I", "EM", "U", "BR", "DIV", "P", "UL", "OL", "LI", "SPAN", "FONT"]);
       const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, null);
       const nodes = [];
       while (walker.nextNode()) nodes.push(walker.currentNode);
@@ -1126,6 +1151,15 @@
           const parent = node.parentNode;
           while (node.firstChild) parent.insertBefore(node.firstChild, node);
           parent.removeChild(node);
+          return;
+        }
+
+        if (node.tagName === "FONT") {
+          const color = node.getAttribute("color");
+          const span = document.createElement("span");
+          if (color) span.setAttribute("style", `color:${color}`);
+          span.innerHTML = node.innerHTML;
+          node.replaceWith(span);
           return;
         }
 
@@ -1169,6 +1203,15 @@
       editable.focus();
       document.execCommand(command, false, value);
       editable.dispatchEvent(new Event('input'));
+    }
+
+    function replaceLegacyFontSizeTags(container, size) {
+      container.querySelectorAll('font[size="7"]').forEach(fontEl => {
+        const span = document.createElement('span');
+        span.style.fontSize = size;
+        span.innerHTML = fontEl.innerHTML;
+        fontEl.replaceWith(span);
+      });
     }
 
     function insertSticker(target, symbol) {
@@ -1302,7 +1345,12 @@
               <button type="button" onclick="formatTaskText(this, 'underline')"><u>U</u></button>
               <button type="button" onclick="formatTaskText(this, 'insertUnorderedList')">• Lista</button>
               <button type="button" onclick="formatTaskText(this, 'removeFormat')">Limpiar</button>
-              <input type="color" value="#1f2937" onchange="formatTaskText(this, 'foreColor', this.value)" title="Color del texto" />
+              <span class="toolbar-label">Color:</span>
+              <button type="button" class="color-chip color-black" title="Negro" onclick="formatTaskText(this, 'foreColor', '#1f2937')">N</button>
+              <button type="button" class="color-chip color-red" title="Rojo" onclick="formatTaskText(this, 'foreColor', '#dc2626')">R</button>
+              <button type="button" class="color-chip color-blue" title="Azul" onclick="formatTaskText(this, 'foreColor', '#2563eb')">A</button>
+              <button type="button" class="color-chip color-green" title="Verde" onclick="formatTaskText(this, 'foreColor', '#16a34a')">V</button>
+              <input type="color" value="#1f2937" onchange="formatTaskText(this, 'foreColor', this.value)" title="Más colores" />
               <button type="button" title="Insertar aprobado" onclick="insertSticker(this, '✔️')">✔️</button>
               <button type="button" title="Insertar importante" onclick="insertSticker(this, '⚠️')">⚠️</button>
               <button type="button" title="Insertar no aprobado" onclick="insertSticker(this, '❌')">❌</button>
@@ -1680,7 +1728,7 @@
               ? acciones.map((t, index) => `
                   <div style="margin-top:8px; padding:8px; border:1px solid #e5e7eb; border-radius:8px; background:white;">
                     <div><strong>Acción ${index + 1}</strong></div>
-                    <div><strong>Descripción:</strong> ${t.descripcion || "-"}</div>
+                    <div><strong>Descripción:</strong> <span class="preserve-lines rich-content">${t.descripcion || "-"}</span></div>
                     <div><strong>Proveedor:</strong> ${escapeHtml(t.proveedor || "-")}</div>
                     <div><strong>Estado:</strong> ${escapeHtml(formatEstado(t.estado || "-"))}</div>
                   </div>
@@ -1754,7 +1802,7 @@
               <div class="small">ID: ${idea.id}</div>
             </div>
 
-            <div class="preserve-lines">${idea.descripcion || "Sin descripción"}</div>
+            <div class="preserve-lines rich-content">${idea.descripcion || "Sin descripción"}</div>
 
             <div class="meta" style="margin-top:8px;">
               ${fechaTexto}<br>
@@ -1831,7 +1879,7 @@
           </div>
 
           <div><strong>Descripción:</strong></div>
-          <div class="preserve-lines">${idea.descripcion || "-"}</div>
+          <div class="preserve-lines rich-content">${idea.descripcion || "-"}</div>
 
           <div class="meta">
             ${isProjectType(idea.tipo)
@@ -1850,7 +1898,7 @@
                       <div style="margin-top:8px; padding:8px; border:1px solid #e5e7eb; border-radius:8px; background:white;">
                         <div><strong>Acción ${index + 1}</strong></div>
                         <div><strong>Descripción:</strong></div>
-                        <div class="preserve-lines">${a.descripcion || "-"}</div>
+                        <div class="preserve-lines rich-content">${a.descripcion || "-"}</div>
                         <div><strong>Proveedor:</strong> ${escapeHtml(a.proveedor || "-")}</div>
                         <div><strong>Estado:</strong> ${escapeHtml(formatEstado(a.estado || "-"))}</div>
                       </div>
@@ -1858,7 +1906,7 @@
                   : `<div style="margin-top:8px;">Sin acciones definidas.</div>`}
               `
               : (extraEntries.length
-                  ? extraEntries.map(([k, v]) => `<div><strong>${escapeHtml(k)}:</strong> <span class="preserve-lines">${escapeHtml(v)}</span></div>`).join("")
+                  ? extraEntries.map(([k, v]) => `<div><strong>${escapeHtml(k)}:</strong> <span class="preserve-lines rich-content">${v}</span></div>`).join("")
                   : "Sin datos adicionales")
             }
           </div>
@@ -2173,7 +2221,7 @@
       ideaId.value = idea.id;
       tipo.value = idea.tipo;
       titulo.value = idea.titulo || "";
-      descripcion.innerHTML = idea.descripcion || "";
+      setDescripcionHtml(idea.descripcion || "");
       fecha.value = idea.fecha || "";
       hora.value = idea.hora || "";
       fechaInicio.value = idea.fechaInicio || "";
