@@ -25,7 +25,7 @@
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 11px;
+      font-size: 12.65px;
       background: var(--bg);
       color: var(--text);
     }
@@ -45,7 +45,7 @@
     header p {
       margin: 0;
       opacity: 0.95;
-      font-size: 10.5px;
+      font-size: 12.1px;
     }
 
     .container {
@@ -76,7 +76,7 @@
       display: block;
       font-weight: bold;
       margin: 6px 0 3px;
-      font-size: 10.5px;
+      font-size: 12.1px;
     }
 
     input, textarea, select, button {
@@ -84,7 +84,7 @@
       padding: 5px 6px;
       border-radius: 6px;
       border: 1px solid var(--line);
-      font-size: 10.5px;
+      font-size: 12.1px;
       font-family: inherit;
     }
 
@@ -127,7 +127,7 @@
     .actions button {
       width: auto;
       min-width: 90px;
-      font-size: 10.5px;
+      font-size: 12.1px;
       padding: 5px 7px;
     }
 
@@ -153,7 +153,7 @@
 
     .stat .label {
       color: var(--muted);
-      font-size: 8px;
+      font-size: 9.2px;
       margin-bottom: 4px;
     }
 
@@ -184,7 +184,7 @@
     .selection-toolbar button {
       width: auto;
       min-width: 100px;
-      font-size: 10.5px;
+      font-size: 12.1px;
       padding: 5px 7px;
     }
 
@@ -229,7 +229,7 @@
 
     .idea-title {
       margin: 0;
-      font-size: 12px;
+      font-size: 13.8px;
     }
 
     .badges {
@@ -243,7 +243,7 @@
       display: inline-block;
       border-radius: 999px;
       padding: 3px 6px;
-      font-size: 8px;
+      font-size: 9.2px;
       font-weight: bold;
     }
 
@@ -268,7 +268,7 @@
     .estado-descartada { background: #f3f4f6; color: #4b5563; }
 
     .meta, .small {
-      font-size: 8px;
+      font-size: 9.2px;
       color: var(--muted);
       line-height: 1.4;
     }
@@ -279,14 +279,14 @@
       border-radius: 6px;
       border: 1px solid #e5e7eb;
       background: #f8fafc;
-      font-size: 10.5px;
+      font-size: 12.1px;
       color: #374151;
       white-space: pre-wrap;
     }
 
     .preserve-lines {
       white-space: pre-wrap;
-      font-size: 10.5px;
+      font-size: 12.1px;
       font-family: Arial, Helvetica, sans-serif;
       line-height: 1.4;
     }
@@ -316,7 +316,7 @@
     .idea-actions button {
       width: auto;
       padding: 5px 7px;
-      font-size: 10.5px;
+      font-size: 12.1px;
     }
 
     .empty {
@@ -326,7 +326,7 @@
       border: 1px dashed var(--line);
       border-radius: 8px;
       background: #fafafa;
-      font-size: 10.5px;
+      font-size: 12.1px;
     }
 
     .hidden {
@@ -352,7 +352,7 @@
     .status-box strong {
       display: block;
       margin-bottom: 4px;
-      font-size: 10.5px;
+      font-size: 12.1px;
       color: #1e40af;
     }
 
@@ -378,7 +378,7 @@
 
     .task-header h4 {
       margin: 0;
-      font-size: 11px;
+      font-size: 12.65px;
     }
 
     .task-remove-btn {
@@ -387,7 +387,7 @@
       background: var(--danger);
       color: white;
       border-radius: 6px;
-      font-size: 10.5px;
+      font-size: 12.1px;
     }
 
     .select-box {
@@ -440,7 +440,7 @@
       border-radius: 6px;
       padding: 6px;
       background: white;
-      font-size: 10.5px;
+      font-size: 12.1px;
       font-family: Arial, Helvetica, sans-serif;
       line-height: 1.4;
       white-space: pre-wrap;
@@ -525,6 +525,8 @@
             <button type="button" onclick="formatText('underline')"><u>U</u></button>
             <button type="button" onclick="formatText('insertUnorderedList')">• Lista</button>
             <button type="button" onclick="formatText('removeFormat')">Limpiar</button>
+            <button type="button" title="Pasar selección a mayúsculas" onclick="transformSelectionCase('upper')">MAY</button>
+            <button type="button" title="Pasar selección a minúsculas" onclick="transformSelectionCase('lower')">min</button>
             <span class="toolbar-label">Color:</span>
             <button type="button" class="color-chip color-black" title="Negro" onclick="formatText('foreColor','#1f2937')">N</button>
             <button type="button" class="color-chip color-red" title="Rojo" onclick="formatText('foreColor','#dc2626')">R</button>
@@ -1190,7 +1192,37 @@
       descripcion.innerHTML = sanitizeRichText(html || "");
     }
 
-    function formatText(command, value = null) {
+    
+    function transformSelectionCase(mode) {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      const selectedText = sel.toString();
+      if (!selectedText) return;
+      const transformed = mode === "upper" ? selectedText.toUpperCase() : selectedText.toLowerCase();
+      range.deleteContents();
+      range.insertNode(document.createTextNode(transformed));
+      sel.removeAllRanges();
+    }
+
+    function transformTaskSelectionCase(button, mode) {
+      const taskCard = button.closest(".project-task");
+      if (!taskCard) return;
+      const editor = taskCard.querySelector(".task-descripcion");
+      if (!editor) return;
+      editor.focus();
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      const selectedText = sel.toString();
+      if (!selectedText) return;
+      const transformed = mode === "upper" ? selectedText.toUpperCase() : selectedText.toLowerCase();
+      range.deleteContents();
+      range.insertNode(document.createTextNode(transformed));
+      sel.removeAllRanges();
+    }
+
+function formatText(command, value = null) {
       descripcion.focus();
       document.execCommand(command, false, value);
       descripcion.dispatchEvent(new Event("input"));
@@ -1345,6 +1377,8 @@
               <button type="button" onclick="formatTaskText(this, 'underline')"><u>U</u></button>
               <button type="button" onclick="formatTaskText(this, 'insertUnorderedList')">• Lista</button>
               <button type="button" onclick="formatTaskText(this, 'removeFormat')">Limpiar</button>
+              <button type="button" title="Pasar selección a mayúsculas" onclick="transformTaskSelectionCase(this, 'upper')">MAY</button>
+              <button type="button" title="Pasar selección a minúsculas" onclick="transformTaskSelectionCase(this, 'lower')">min</button>
               <span class="toolbar-label">Color:</span>
               <button type="button" class="color-chip color-black" title="Negro" onclick="formatTaskText(this, 'foreColor', '#1f2937')">N</button>
               <button type="button" class="color-chip color-red" title="Rojo" onclick="formatTaskText(this, 'foreColor', '#dc2626')">R</button>
