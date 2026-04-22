@@ -382,6 +382,52 @@
     .status-warn { color: #92400e; }
     .status-error { color: #b91c1c; }
 
+    .sync-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      color: #374151;
+    }
+
+    .sync-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #9ca3af;
+      flex: 0 0 10px;
+    }
+
+    .sync-ok {
+      background: #ecfdf5;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+
+    .sync-ok .sync-dot { background: #16a34a; }
+
+    .sync-pending {
+      background: #fff7ed;
+      color: #9a3412;
+      border-color: #fed7aa;
+    }
+
+    .sync-pending .sync-dot { background: #ea580c; }
+
+    .sync-error {
+      background: #fef2f2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+
+    .sync-error .sync-dot { background: #dc2626; }
+
     .task-card {
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -482,6 +528,17 @@
     .rich-text ol {
       margin: 4px 0 4px 18px;
       padding: 0;
+    }
+
+    .folder-required-banner {
+      margin: 10px 0 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #fca5a5;
+      background: #fef2f2;
+      color: #991b1b;
+      font-weight: bold;
+      font-size: 12.4px;
     }
 
     @media (max-width: 1100px) {
@@ -625,6 +682,8 @@
           <button type="button" class="btn-primary" id="showNewIdeaBtn">Nueva idea</button>
         </div>
 
+        <div id="folderRequiredBanner" class="folder-required-banner hidden">🔴 Debes seleccionar una carpeta JSON para trabajar y guardar ideas.</div>
+
         <div class="split-line" style="margin-top:0; padding-top:0; border-top:none;">
           <div class="section-mini">
             <h4>Para hoy</h4>
@@ -652,7 +711,10 @@
               <div id="jsonFolderStatus" class="small">Carpeta no seleccionada. Pulsa “Seleccionar / cambiar carpeta JSON”.</div>
               <div id="jsonSaveStatus" class="small">Los datos siguen guardándose también en este navegador.</div>
               <div id="currentJsonFileName" class="small" style="margin-top:6px;"><b>Archivo JSON en uso:</b> ideas.json</div>
+              <div id="jsonFilePath" class="small"><b>Carpeta:</b> No vinculada</div>
+              <div id="jsonFileDate" class="small"><b>Fecha archivo:</b> No disponible</div>
               <div id="currentJsonMode" class="small">Modo actual: archivo por defecto.</div>
+              <div id="jsonSyncIndicator" class="sync-indicator"><span class="sync-dot"></span><span id="jsonSyncText">Estado del JSON: sin vincular</span></div>
             </div>
             <div class="small" style="margin-top:8px;">
               Al elegir una carpeta, el programa guardará automáticamente el archivo que esté en uso en ese equipo. Puedes cambiar la carpeta cuando quieras.
@@ -810,7 +872,12 @@
     const jsonFolderStatus = document.getElementById("jsonFolderStatus");
     const jsonSaveStatus = document.getElementById("jsonSaveStatus");
     const currentJsonFileName = document.getElementById("currentJsonFileName");
+    const jsonFilePath = document.getElementById("jsonFilePath");
+    const jsonFileDate = document.getElementById("jsonFileDate");
     const currentJsonMode = document.getElementById("currentJsonMode");
+    const jsonSyncIndicator = document.getElementById("jsonSyncIndicator");
+    const jsonSyncText = document.getElementById("jsonSyncText");
+    const folderRequiredBanner = document.getElementById("folderRequiredBanner");
 
     const selectVisibleBtn = document.getElementById("selectVisibleBtn");
     const clearSelectionBtn = document.getElementById("clearSelectionBtn");
@@ -860,16 +927,74 @@
       return safeName;
     }
 
-    function updateCurrentJsonFileInfo() {
+    function setJsonSyncState(state = "idle", message = "") {
+      if (!jsonSyncIndicator || !jsonSyncText) return;
+
+      jsonSyncIndicator.className = "sync-indicator";
+      if (state === "ok") jsonSyncIndicator.classList.add("sync-ok");
+      else if (state === "pending") jsonSyncIndicator.classList.add("sync-pending");
+      else if (state === "error") jsonSyncIndicator.classList.add("sync-error");
+
+      jsonSyncText.textContent = message || "Estado del JSON";
+    }
+
+    function updateFolderRequiredBanner() {
+      if (!folderRequiredBanner) return;
+      folderRequiredBanner.classList.toggle("hidden", !!linkedDirectoryHandle);
+    }
+
+    function ensureLinkedFolderSelected(showAlert = true) {
+      if (linkedDirectoryHandle) return true;
+      updateFolderRequiredBanner();
+      setJsonFolderStatus("Carpeta no seleccionada. Debes elegir una carpeta JSON para trabajar.", "status-error");
+      setJsonSaveStatus("Sin carpeta seleccionada no se pueden guardar ideas.", "status-error");
+      setJsonSyncState("error", "Estado del JSON: falta seleccionar carpeta");
+      if (showAlert) alert("Debes seleccionar una carpeta JSON antes de continuar.");
+      return false;
+    }
+
+    async function updateJsonFileInfoDetails() {
       const fileName = getActiveJsonFileName();
+
       if (currentJsonFileName) {
         currentJsonFileName.innerHTML = `<b>Archivo JSON en uso:</b> ${escapeHtml(fileName)}`;
       }
+
+      if (jsonFilePath) {
+        jsonFilePath.innerHTML = `<b>Carpeta:</b> ${linkedDirectoryHandle ? escapeHtml(linkedDirectoryHandle.name) : "No vinculada"}`;
+      }
+
       if (currentJsonMode) {
         currentJsonMode.textContent = linkedDirectoryHandle
           ? "Modo actual: carpeta vinculada + exportación con el mismo nombre."
           : "Modo actual: navegador / exportación manual.";
       }
+
+      updateFolderRequiredBanner();
+
+      if (!linkedDirectoryHandle) {
+        if (jsonFileDate) jsonFileDate.innerHTML = `<b>Fecha archivo:</b> No disponible`;
+        return;
+      }
+
+      try {
+        const fileHandle = await getLinkedJsonFileHandle(false);
+        if (!fileHandle) {
+          if (jsonFileDate) jsonFileDate.innerHTML = `<b>Fecha archivo:</b> No disponible`;
+          return;
+        }
+        const file = await fileHandle.getFile();
+        const fechaTexto = new Date(file.lastModified).toLocaleString("es-ES");
+        if (jsonFileDate) {
+          jsonFileDate.innerHTML = `<b>Fecha archivo:</b> ${escapeHtml(fechaTexto)}`;
+        }
+      } catch {
+        if (jsonFileDate) jsonFileDate.innerHTML = `<b>Fecha archivo:</b> No disponible`;
+      }
+    }
+
+    function updateCurrentJsonFileInfo() {
+      updateJsonFileInfoDetails();
     }
 
     async function renameActiveJsonFile() {
@@ -888,8 +1013,10 @@
       if (linkedDirectoryHandle) {
         setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${newName}`, "status-ok");
         setJsonSaveStatus(`El nombre activo se ha cambiado a ${newName}. El próximo guardado usará ese nombre.`, "status-ok");
+        setJsonSyncState("pending", `Estado del JSON: nombre cambiado (${newName})`);
       } else {
         setJsonSaveStatus(`El nombre activo se ha cambiado a ${newName}.`, "status-ok");
+        setJsonSyncState("pending", `Estado del JSON: nombre preparado (${newName})`);
       }
 
       updateCurrentJsonFileInfo();
@@ -957,12 +1084,14 @@
 
       if (!linkedDirectoryHandle) {
         setJsonSaveStatus("No hay carpeta seleccionada para el autoguardado JSON.", "status-warn");
+        setJsonSyncState("error", "Estado del JSON: sin carpeta vinculada");
         return false;
       }
 
       const permission = await getDirectoryPermissionState(linkedDirectoryHandle);
       if (permission !== "granted") {
         setJsonSaveStatus("La carpeta está vinculada, pero el navegador pide permiso para volver a guardar.", "status-warn");
+        setJsonSyncState("pending", "Estado del JSON: permiso pendiente");
         return false;
       }
 
@@ -973,7 +1102,8 @@
 
       setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${activeFileName}`, "status-ok");
       setJsonSaveStatus(`Guardado automático correcto: ${activeFileName}`, "status-ok");
-      updateCurrentJsonFileInfo();
+      setJsonSyncState("ok", `Estado del JSON: guardado (${activeFileName})`);
+      await updateJsonFileInfoDetails();
       return true;
     }
 
@@ -989,6 +1119,7 @@
       } catch (error) {
         console.error(error);
         setJsonSaveStatus("No se pudo guardar automáticamente el JSON en la carpeta elegida.", "status-error");
+        setJsonSyncState("error", "Estado del JSON: error al guardar");
       } finally {
         autosaveRunning = false;
         if (autosaveQueuedIdeas) {
@@ -1000,11 +1131,13 @@
     function scheduleLinkedJsonAutosave(ideas) {
       if (!linkedDirectoryHandle) {
         setJsonSaveStatus("Los datos se guardan en este navegador. Si quieres, vincula una carpeta para crear el JSON automáticamente.", "status-warn");
+        setJsonSyncState("pending", "Estado del JSON: sin vincular");
         return;
       }
 
       autosaveQueuedIdeas = normalizeIdeasArray(ideas);
       setJsonSaveStatus(`Cambios pendientes de guardar en ${getActiveJsonFileName()}...`, "status-warn");
+      setJsonSyncState("pending", `Estado del JSON: pendiente (${getActiveJsonFileName()})`);
 
       clearTimeout(autosaveTimer);
       autosaveTimer = setTimeout(() => {
@@ -1028,6 +1161,7 @@
       const granted = await requestDirectoryPermission(linkedDirectoryHandle);
       if (!granted) {
         setJsonSaveStatus("No se concedió permiso de escritura para la carpeta vinculada.", "status-error");
+        setJsonSyncState("error", "Estado del JSON: permiso denegado");
         alert("No se ha podido guardar porque el navegador no ha concedido permiso para escribir en la carpeta.");
         return;
       }
@@ -1049,6 +1183,7 @@
 
         if (!granted) {
           setJsonSaveStatus("No se concedió permiso para la carpeta seleccionada.", "status-error");
+          setJsonSyncState("error", "Estado del JSON: permiso denegado");
           return;
         }
 
@@ -1058,7 +1193,8 @@
         const activeFileName = getActiveJsonFileName();
         setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${activeFileName}`, "status-ok");
         setJsonSaveStatus(`Preparado para guardar automáticamente en ${activeFileName}.`, "status-ok");
-        updateCurrentJsonFileInfo();
+        setJsonSyncState("ok", `Estado del JSON: carpeta vinculada (${activeFileName})`);
+        await updateJsonFileInfoDetails();
 
         const fileHandle = await getLinkedJsonFileHandle(true);
         const file = await fileHandle.getFile();
@@ -1075,6 +1211,8 @@
               resetForm();
               renderIdeas();
               setJsonSaveStatus(`Archivo ${activeFileName} cargado y vinculado correctamente.`, "status-ok");
+              setJsonSyncState("ok", `Estado del JSON: cargado (${activeFileName})`);
+              await updateJsonFileInfoDetails();
               return;
             }
           } catch {
@@ -1086,6 +1224,7 @@
         if (error && error.name === "AbortError") return;
         console.error(error);
         setJsonSaveStatus("No se pudo vincular la carpeta JSON.", "status-error");
+        setJsonSyncState("error", "Estado del JSON: error al vincular carpeta");
       }
     }
 
@@ -1095,34 +1234,84 @@
       if (!supportsLinkedJsonAutosave()) {
         setJsonFolderStatus("Este navegador no permite fijar una carpeta de guardado automático JSON.", "status-warn");
         setJsonSaveStatus("Puedes seguir usando Exportar JSON manualmente y los datos siguen guardándose en este navegador.", "status-warn");
+        setJsonSyncState("pending", "Estado del JSON: navegador sin carpeta vinculable");
         updateCurrentJsonFileInfo();
+        updateFolderRequiredBanner();
         return;
       }
 
-      try {
-        linkedDirectoryHandle = await loadDirectoryHandleFromDB();
+      linkedDirectoryHandle = null;
+      updateFolderRequiredBanner();
+      setJsonFolderStatus("Selecciona la carpeta donde quieres guardar el JSON.", "status-warn");
+      setJsonSaveStatus("Debes elegir carpeta al abrir el programa.", "status-warn");
+      setJsonSyncState("pending", "Estado del JSON: esperando selección de carpeta");
+      await updateJsonFileInfoDetails();
 
-        if (!linkedDirectoryHandle) {
-          setJsonFolderStatus("Carpeta no seleccionada. Pulsa “Seleccionar / cambiar carpeta JSON”.", "status-warn");
-          setJsonSaveStatus("Los datos se guardan en este navegador. Si quieres, vincula una carpeta para crear el JSON automáticamente.", "status-warn");
-          updateCurrentJsonFileInfo();
+      try {
+        const directoryHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+        const granted = await requestDirectoryPermission(directoryHandle);
+
+        if (!granted) {
+          linkedDirectoryHandle = null;
+          updateFolderRequiredBanner();
+          setJsonFolderStatus("No se concedió permiso para la carpeta seleccionada.", "status-error");
+          setJsonSaveStatus("Debes conceder permiso para poder trabajar con el JSON.", "status-error");
+          setJsonSyncState("error", "Estado del JSON: permiso denegado");
+          alert("Debes conceder permiso para trabajar con el archivo JSON.");
+          await updateJsonFileInfoDetails();
           return;
         }
 
-        const permission = await getDirectoryPermissionState(linkedDirectoryHandle);
-        setJsonFolderStatus(`Carpeta recordada: ${linkedDirectoryHandle.name} · archivo ${activeFileName}`, permission === "granted" ? "status-ok" : "status-warn");
+        linkedDirectoryHandle = directoryHandle;
+        await saveDirectoryHandleToDB(directoryHandle);
 
-        if (permission === "granted") {
-          setJsonSaveStatus(`Autoguardado activo en ${activeFileName}.`, "status-ok");
-        } else {
-          setJsonSaveStatus("La carpeta está recordada, pero quizá tengas que pulsar “Guardar JSON ahora” o volver a elegir la carpeta para dar permiso.", "status-warn");
+        setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${activeFileName}`, "status-ok");
+        setJsonSaveStatus(`Carpeta seleccionada correctamente para ${activeFileName}.`, "status-ok");
+        setJsonSyncState("ok", `Estado del JSON: carpeta vinculada (${activeFileName})`);
+        await updateJsonFileInfoDetails();
+
+        try {
+          const fileHandle = await getLinkedJsonFileHandle(false);
+          if (fileHandle) {
+            const file = await fileHandle.getFile();
+            const content = await file.text();
+
+            if (content.trim()) {
+              const parsed = JSON.parse(content);
+              const linkedIdeas = normalizeIdeasArray(parsed);
+
+              if (Array.isArray(parsed) && linkedIdeas.length && confirm(`Se ha encontrado ${activeFileName}. ¿Quieres cargarlo ahora en el programa?`)) {
+                saveIdeas(linkedIdeas);
+                selectedIdeaIds.clear();
+                resetForm();
+                renderIdeas();
+                setJsonSaveStatus(`Archivo ${activeFileName} cargado y vinculado correctamente.`, "status-ok");
+                setJsonSyncState("ok", `Estado del JSON: cargado (${activeFileName})`);
+                await updateJsonFileInfoDetails();
+                return;
+              }
+            }
+          }
+        } catch {
         }
-        updateCurrentJsonFileInfo();
+
+        scheduleLinkedJsonAutosave(loadIdeas());
       } catch (error) {
+        linkedDirectoryHandle = null;
+        updateFolderRequiredBanner();
+        if (error && error.name === "AbortError") {
+          setJsonFolderStatus("No se seleccionó carpeta. Debes elegir una carpeta JSON para trabajar.", "status-error");
+          setJsonSaveStatus("Sin carpeta seleccionada no se pueden guardar ideas.", "status-error");
+          setJsonSyncState("error", "Estado del JSON: carpeta no seleccionada");
+          alert("Debes seleccionar una carpeta para usar el programa.");
+          await updateJsonFileInfoDetails();
+          return;
+        }
         console.error(error);
-        setJsonFolderStatus("No se pudo recuperar la carpeta JSON guardada anteriormente.", "status-error");
-        setJsonSaveStatus("Puedes volver a seleccionarla cuando quieras.", "status-warn");
-        updateCurrentJsonFileInfo();
+        setJsonFolderStatus("No se pudo vincular la carpeta JSON.", "status-error");
+        setJsonSaveStatus("Ha ocurrido un error al seleccionar la carpeta.", "status-error");
+        setJsonSyncState("error", "Estado del JSON: error al vincular carpeta");
+        await updateJsonFileInfoDetails();
       }
     }
 
@@ -1135,8 +1324,13 @@
     }
 
     function saveIdeas(ideas) {
+      if (!ensureLinkedFolderSelected(false)) {
+        updateFolderRequiredBanner();
+        return false;
+      }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(ideas));
       scheduleLinkedJsonAutosave(ideas);
+      return true;
     }
 
     function generateId() {
@@ -2270,6 +2464,8 @@ function formatText(command, value = null) {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
 
+      if (!ensureLinkedFolderSelected(true)) return;
+
       if (!titulo.value.trim()) {
         alert("El título es obligatorio.");
         return;
@@ -2282,7 +2478,7 @@ function formatText(command, value = null) {
       if (index >= 0) ideas[index] = idea;
       else ideas.push(idea);
 
-      saveIdeas(ideas);
+      if (!saveIdeas(ideas)) return;
       resetForm();
       renderIdeas();
     });
@@ -2351,14 +2547,14 @@ function formatText(command, value = null) {
       const index = ideas.findIndex(i => i.id === id);
       if (index < 0) return;
       ideas[index].estado = "hecha";
-      saveIdeas(ideas);
+      if (!saveIdeas(ideas)) return;
       renderIdeas();
     }
 
     function deleteIdea(id) {
       if (!confirm("¿Seguro que quieres borrar esta idea?")) return;
       const ideas = normalizeIdeasArray(loadIdeas()).filter(i => i.id !== id);
-      saveIdeas(ideas);
+      if (!saveIdeas(ideas)) return;
       selectedIdeaIds.delete(id);
       if (Number(ideaId.value) === id) resetForm();
       renderIdeas();
@@ -2375,7 +2571,7 @@ function formatText(command, value = null) {
       copy.titulo = `${found.titulo} (copia)`;
 
       ideas.push(normalizeIdea(copy));
-      saveIdeas(ideas);
+      if (!saveIdeas(ideas)) return;
       renderIdeas();
     }
 
@@ -2416,7 +2612,7 @@ function formatText(command, value = null) {
           const normalizedData = normalizeIdeasArray(data);
 
           setActiveJsonFileName(importedFileName);
-          saveIdeas(normalizedData);
+          if (!saveIdeas(normalizedData)) return;
           selectedIdeaIds.clear();
           resetForm();
           renderIdeas();
@@ -2433,7 +2629,7 @@ function formatText(command, value = null) {
 
     clearAllBtn.addEventListener("click", () => {
       if (!confirm("¿Seguro que quieres eliminar todas las ideas guardadas?")) return;
-      saveIdeas([]);
+      if (!saveIdeas([])) return;
       selectedIdeaIds.clear();
       resetForm();
       renderIdeas();
