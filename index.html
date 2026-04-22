@@ -333,6 +333,28 @@
       display: none;
     }
 
+    .editor-card-hidden {
+      display: none;
+    }
+
+    .editor-launcher {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .editor-launcher button {
+      width: auto;
+      min-width: 150px;
+      padding: 8px 12px;
+    }
+
+    @media print {
+      body {
+        font-size: 11pt !important;
+      }
+    }
+
     .section-mini {
       margin-top: 8px;
       padding: 8px;
@@ -496,7 +518,7 @@
 
   <div class="container">
     <div class="layout">
-      <section class="card">
+      <section class="card editor-card-hidden" id="editorCard">
         <h2 id="formTitle">Nueva idea</h2>
 
         <form id="ideaForm">
@@ -596,7 +618,14 @@
           </div>
         </form>
 
-        <div class="split-line">
+      </section>
+
+      <section class="card">
+        <div class="editor-launcher">
+          <button type="button" class="btn-primary" id="showNewIdeaBtn">Nueva idea</button>
+        </div>
+
+        <div class="split-line" style="margin-top:0; padding-top:0; border-top:none;">
           <div class="section-mini">
             <h4>Para hoy</h4>
             <div id="todayList" class="small">No hay llamadas ni reuniones/visitas pendientes para hoy.</div>
@@ -630,9 +659,7 @@
             </div>
           </div>
         </div>
-      </section>
 
-      <section class="card">
         <h2>Listado de ideas</h2>
 
         <div class="stats">
@@ -764,6 +791,8 @@
     const formTitle = document.getElementById("formTitle");
     const saveBtn = document.getElementById("saveBtn");
     const cancelEditBtn = document.getElementById("cancelEditBtn");
+    const editorCard = document.getElementById("editorCard");
+    const showNewIdeaBtn = document.getElementById("showNewIdeaBtn");
 
     const statTotal = document.getElementById("statTotal");
     const statPendientes = document.getElementById("statPendientes");
@@ -1548,6 +1577,18 @@ function formatText(command, value = null) {
       }
     }
 
+
+    function openEditor(mode = "new") {
+      editorCard.classList.remove("editor-card-hidden");
+      showNewIdeaBtn.textContent = mode === "edit" ? "Editando idea" : "Nueva idea";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function closeEditor() {
+      editorCard.classList.add("editor-card-hidden");
+      showNewIdeaBtn.textContent = "Nueva idea";
+    }
+
     function resetForm() {
       form.reset();
       ideaId.value = "";
@@ -1561,6 +1602,7 @@ function formatText(command, value = null) {
       formTitle.textContent = "Nueva idea";
       saveBtn.textContent = "Guardar idea";
       renderDynamicFields({});
+      closeEditor();
     }
 
     function getExistingCreated(id) {
@@ -1949,60 +1991,90 @@ function formatText(command, value = null) {
     }
 
     function buildPrintDocument(title, ideas, format = "pdf") {
-      const fontSize = format === "word" ? '10pt' : '8px';
+      const baseFontSize = '11pt';
+      const pageMargin = format === "word" ? '16mm' : '14mm';
       return `
         <html>
         <head>
           <meta charset="utf-8">
           <title>${escapeHtml(title)}</title>
           <style>
+            @page {
+              size: A4;
+              margin: ${pageMargin};
+            }
             body {
-              font-family: Arial, sans-serif;
-              font-size: ${fontSize};
-              padding: 10px;
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: ${baseFontSize};
+              line-height: 1.4;
+              padding: 0;
+              margin: 0;
               color: #1f2937;
+              background: white;
             }
             h1 {
-              margin: 0 0 8px 0;
-              font-size: 16px;
+              margin: 0 0 10px 0;
+              font-size: 18pt;
             }
             h2 {
               margin: 0 0 6px 0;
-              font-size: 12px;
+              font-size: 13pt;
+            }
+            p {
+              margin: 0 0 10px 0;
+              font-size: 11pt;
             }
             .item {
-              border: 1px solid #ccc;
+              border: 1px solid #d9e1ea;
               border-radius: 8px;
-              padding: 10px;
+              padding: 10px 12px;
               margin-bottom: 10px;
               page-break-inside: avoid;
+              break-inside: avoid;
               background: white;
             }
             .meta {
               color: #555;
-              font-size: ${format === "word" ? '10pt' : '8px'};
-              margin-top: 6px;
+              font-size: 11pt;
+              margin-top: 8px;
               line-height: 1.4;
             }
             .block {
-              margin-top: 6px;
-              background: #f7f7f7;
-              padding: 6px;
+              margin-top: 8px;
+              background: #f8fafc;
+              padding: 8px;
               border-radius: 6px;
+              border: 1px solid #e5e7eb;
             }
             .badges {
-              margin: 5px 0 6px 0;
+              margin: 5px 0 8px 0;
             }
             .badge {
               display: inline-block;
               padding: 2px 6px;
               border-radius: 999px;
-              font-size: ${format === "word" ? '10pt' : '8px'};
+              font-size: 10pt;
               font-weight: bold;
               margin-right: 4px;
             }
-            .preserve-lines {
+            .preserve-lines,
+            .rich-content {
               white-space: pre-wrap;
+              font-size: 11pt;
+              line-height: 1.4;
+            }
+            .rich-content span,
+            .rich-content b,
+            .rich-content strong,
+            .rich-content i,
+            .rich-content em,
+            .rich-content u,
+            .rich-content div,
+            .rich-content p,
+            .rich-content li {
+              font-size: inherit;
+              line-height: inherit;
+              font-family: inherit;
             }
           </style>
         </head>
@@ -2226,6 +2298,11 @@ function formatText(command, value = null) {
 
     cancelEditBtn.addEventListener("click", resetForm);
 
+    showNewIdeaBtn.addEventListener("click", () => {
+      resetForm();
+      openEditor("new");
+    });
+
     selectVisibleBtn.addEventListener("click", () => {
       getIdeasFiltered().forEach(idea => selectedIdeaIds.add(idea.id));
       updateSelectionCount();
@@ -2266,7 +2343,7 @@ function formatText(command, value = null) {
       renderDynamicFields(idea.extra || {});
       formTitle.textContent = "Editar idea";
       saveBtn.textContent = "Guardar cambios";
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      openEditor("edit");
     }
 
     function markDone(id) {
@@ -2460,6 +2537,7 @@ function formatText(command, value = null) {
     }
 
     renderDynamicFields({});
+    closeEditor();
     initLinkedJsonFolder();
     setActiveJsonFileName(getActiveJsonFileName());
     updateCurrentJsonFileInfo();
