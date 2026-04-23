@@ -139,7 +139,7 @@
 
     .stats {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(9, 1fr);
       gap: 6px;
       margin-bottom: 10px;
     }
@@ -615,6 +615,24 @@
             <button type="button" title="Insertar aprobado" onclick="insertSticker('descripcion', '✔️')">✔️</button>
             <button type="button" title="Insertar importante" onclick="insertSticker('descripcion', '⚠️')">⚠️</button>
             <button type="button" title="Insertar no aprobado" onclick="insertSticker('descripcion', '❌')">❌</button>
+            <button type="button" title="Insertar estrella" onclick="insertSticker('descripcion', '⭐')">⭐</button>
+            <button type="button" title="Insertar idea" onclick="insertSticker('descripcion', '💡')">💡</button>
+            <button type="button" title="Insertar fijado" onclick="insertSticker('descripcion', '📌')">📌</button>
+            <button type="button" title="Insertar llamada" onclick="insertSticker('descripcion', '📞')">📞</button>
+            <button type="button" title="Insertar reunión agendada" onclick="insertSticker('descripcion', '🗓️')">🗓️</button>
+            <button type="button" title="Insertar coste" onclick="insertSticker('descripcion', '💲')">💲</button>
+            <button type="button" title="Insertar mantenimiento" onclick="insertSticker('descripcion', '🛠️')">🛠️</button>
+            <select id="extraStickerSelect" onchange="insertSelectedSticker(this, 'descripcion')" title="Más stickers" style="width:auto; min-width:120px;">
+              <option value="">Más stickers</option>
+              <option value="🕒">🕒 Pendiente</option>
+              <option value="🚚">🚚 Transporte</option>
+              <option value="🛠️">🛠️ Mantenimiento</option>
+              <option value="📅">📅 Fecha</option>
+              <option value="📍">📍 Ubicación</option>
+              <option value="💲">💲 Coste</option>
+              <option value="🧪">🧪 Ensayo</option>
+              <option value="🏭">🏭 Planta</option>
+            </select>
           </div>
           <div id="descripcion" class="rich-text" contenteditable="true" data-placeholder="Detalles, observaciones o contexto..."></div>
 
@@ -698,7 +716,8 @@
           <div class="section-mini">
             <h4>Datos</h4>
             <div class="actions">
-              <button type="button" class="btn-primary" id="linkJsonFolderBtn">Seleccionar / cambiar carpeta JSON</button>
+              <button type="button" class="btn-primary" id="linkJsonFolderBtn">Seleccionar carpeta JSON</button>
+              <button type="button" class="btn-secondary" id="pickAndroidFolderBtn">Android / OneDrive</button>
               <button type="button" class="btn-success" id="saveJsonNowBtn">Guardar JSON ahora</button>
               <button type="button" class="btn-success" id="exportBtn">Exportar JSON</button>
               <button type="button" class="btn-secondary" id="renameJsonBtn">Cambiar nombre JSON</button>
@@ -717,7 +736,7 @@
               <div id="jsonSyncIndicator" class="sync-indicator"><span class="sync-dot"></span><span id="jsonSyncText">Estado del JSON: sin vincular</span></div>
             </div>
             <div class="small" style="margin-top:8px;">
-              Al elegir una carpeta, el programa guardará automáticamente el archivo que esté en uso en ese equipo. Puedes cambiar la carpeta cuando quieras.
+              En iPhone puedes importar y exportar JSON sin seleccionar carpeta. En Android, el botón “Android / OneDrive” abre el selector del sistema para que entres en Archivos y elijas una carpeta de OneDrive si tu navegador lo permite.
             </div>
           </div>
         </div>
@@ -744,6 +763,22 @@
           <div class="stat">
             <div class="label">Urgentes</div>
             <div class="value" id="statUrgentes">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">💲 Costes</div>
+            <div class="value" id="statStickerMoney">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">🛠️ Mantto.</div>
+            <div class="value" id="statStickerMaintenance">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">⚠️ Riesgos</div>
+            <div class="value" id="statStickerRisk">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">💡 Mejoras</div>
+            <div class="value" id="statStickerIdea">0</div>
           </div>
         </div>
 
@@ -861,6 +896,10 @@
     const statEnCurso = document.getElementById("statEnCurso");
     const statHechas = document.getElementById("statHechas");
     const statUrgentes = document.getElementById("statUrgentes");
+    const statStickerMoney = document.getElementById("statStickerMoney");
+    const statStickerMaintenance = document.getElementById("statStickerMaintenance");
+    const statStickerRisk = document.getElementById("statStickerRisk");
+    const statStickerIdea = document.getElementById("statStickerIdea");
 
     const exportBtn = document.getElementById("exportBtn");
     const importBtn = document.getElementById("importBtn");
@@ -869,6 +908,7 @@
     const linkJsonFolderBtn = document.getElementById("linkJsonFolderBtn");
     const saveJsonNowBtn = document.getElementById("saveJsonNowBtn");
     const renameJsonBtn = document.getElementById("renameJsonBtn");
+    const pickAndroidFolderBtn = document.getElementById("pickAndroidFolderBtn");
     const jsonFolderStatus = document.getElementById("jsonFolderStatus");
     const jsonSaveStatus = document.getElementById("jsonSaveStatus");
     const currentJsonFileName = document.getElementById("currentJsonFileName");
@@ -940,16 +980,16 @@
 
     function updateFolderRequiredBanner() {
       if (!folderRequiredBanner) return;
-      folderRequiredBanner.classList.toggle("hidden", !!linkedDirectoryHandle);
+      folderRequiredBanner.classList.toggle("hidden", true);
     }
 
     function ensureLinkedFolderSelected(showAlert = true) {
       if (linkedDirectoryHandle) return true;
       updateFolderRequiredBanner();
-      setJsonFolderStatus("Carpeta no seleccionada. Debes elegir una carpeta JSON para trabajar.", "status-error");
-      setJsonSaveStatus("Sin carpeta seleccionada no se pueden guardar ideas.", "status-error");
-      setJsonSyncState("error", "Estado del JSON: falta seleccionar carpeta");
-      if (showAlert) alert("Debes seleccionar una carpeta JSON antes de continuar.");
+      setJsonFolderStatus("Carpeta no seleccionada. Puedes seguir trabajando en este navegador o importar/exportar JSON manualmente.", "status-warn");
+      setJsonSaveStatus("Sin carpeta vinculada, los datos se guardan en este navegador. Usa Exportar JSON para sacar una copia.", "status-warn");
+      setJsonSyncState("pending", "Estado del JSON: guardado local en navegador");
+      if (showAlert) alert("No hay carpeta vinculada. Puedes seguir trabajando: los datos se guardarán en este navegador y podrás importar o exportar JSON manualmente.");
       return false;
     }
 
@@ -1233,86 +1273,45 @@
 
       if (!supportsLinkedJsonAutosave()) {
         setJsonFolderStatus("Este navegador no permite fijar una carpeta de guardado automático JSON.", "status-warn");
-        setJsonSaveStatus("Puedes seguir usando Exportar JSON manualmente y los datos siguen guardándose en este navegador.", "status-warn");
+        setJsonSaveStatus("Puedes seguir usando Importar/Exportar JSON y los datos siguen guardándose en este navegador.", "status-warn");
         setJsonSyncState("pending", "Estado del JSON: navegador sin carpeta vinculable");
         updateCurrentJsonFileInfo();
         updateFolderRequiredBanner();
         return;
       }
 
-      linkedDirectoryHandle = null;
-      updateFolderRequiredBanner();
-      setJsonFolderStatus("Selecciona la carpeta donde quieres guardar el JSON.", "status-warn");
-      setJsonSaveStatus("Debes elegir carpeta al abrir el programa.", "status-warn");
-      setJsonSyncState("pending", "Estado del JSON: esperando selección de carpeta");
-      await updateJsonFileInfoDetails();
-
       try {
-        const directoryHandle = await window.showDirectoryPicker({ mode: "readwrite" });
-        const granted = await requestDirectoryPermission(directoryHandle);
-
-        if (!granted) {
+        const storedHandle = await loadDirectoryHandleFromDB();
+        if (!storedHandle) {
           linkedDirectoryHandle = null;
-          updateFolderRequiredBanner();
-          setJsonFolderStatus("No se concedió permiso para la carpeta seleccionada.", "status-error");
-          setJsonSaveStatus("Debes conceder permiso para poder trabajar con el JSON.", "status-error");
-          setJsonSyncState("error", "Estado del JSON: permiso denegado");
-          alert("Debes conceder permiso para trabajar con el archivo JSON.");
+          setJsonFolderStatus("Carpeta no vinculada. Puedes trabajar en local o vincular una carpeta cuando quieras.", "status-warn");
+          setJsonSaveStatus("Datos guardados en este navegador. Para Android/OneDrive usa el botón específico si tu navegador lo permite.", "status-warn");
+          setJsonSyncState("pending", "Estado del JSON: guardado local en navegador");
           await updateJsonFileInfoDetails();
           return;
         }
 
-        linkedDirectoryHandle = directoryHandle;
-        await saveDirectoryHandleToDB(directoryHandle);
-
-        setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${activeFileName}`, "status-ok");
-        setJsonSaveStatus(`Carpeta seleccionada correctamente para ${activeFileName}.`, "status-ok");
-        setJsonSyncState("ok", `Estado del JSON: carpeta vinculada (${activeFileName})`);
-        await updateJsonFileInfoDetails();
-
-        try {
-          const fileHandle = await getLinkedJsonFileHandle(false);
-          if (fileHandle) {
-            const file = await fileHandle.getFile();
-            const content = await file.text();
-
-            if (content.trim()) {
-              const parsed = JSON.parse(content);
-              const linkedIdeas = normalizeIdeasArray(parsed);
-
-              if (Array.isArray(parsed) && linkedIdeas.length && confirm(`Se ha encontrado ${activeFileName}. ¿Quieres cargarlo ahora en el programa?`)) {
-                saveIdeas(linkedIdeas);
-                selectedIdeaIds.clear();
-                resetForm();
-                renderIdeas();
-                setJsonSaveStatus(`Archivo ${activeFileName} cargado y vinculado correctamente.`, "status-ok");
-                setJsonSyncState("ok", `Estado del JSON: cargado (${activeFileName})`);
-                await updateJsonFileInfoDetails();
-                return;
-              }
-            }
-          }
-        } catch {
+        const permission = await getDirectoryPermissionState(storedHandle);
+        if (permission === 'granted' || await requestDirectoryPermission(storedHandle)) {
+          linkedDirectoryHandle = storedHandle;
+          setJsonFolderStatus(`Carpeta vinculada: ${linkedDirectoryHandle.name} · archivo ${activeFileName}`, "status-ok");
+          setJsonSaveStatus(`Lista para guardar automáticamente en ${activeFileName}.`, "status-ok");
+          setJsonSyncState("ok", `Estado del JSON: carpeta vinculada (${activeFileName})`);
+        } else {
+          linkedDirectoryHandle = null;
+          setJsonFolderStatus("La carpeta vinculada necesita permiso de nuevo. Puedes seguir en local o volver a seleccionarla.", "status-warn");
+          setJsonSaveStatus("Datos guardados en este navegador mientras no se recupere el permiso.", "status-warn");
+          setJsonSyncState("pending", "Estado del JSON: permiso pendiente");
         }
-
-        scheduleLinkedJsonAutosave(loadIdeas());
       } catch (error) {
-        linkedDirectoryHandle = null;
-        updateFolderRequiredBanner();
-        if (error && error.name === "AbortError") {
-          setJsonFolderStatus("No se seleccionó carpeta. Debes elegir una carpeta JSON para trabajar.", "status-error");
-          setJsonSaveStatus("Sin carpeta seleccionada no se pueden guardar ideas.", "status-error");
-          setJsonSyncState("error", "Estado del JSON: carpeta no seleccionada");
-          alert("Debes seleccionar una carpeta para usar el programa.");
-          await updateJsonFileInfoDetails();
-          return;
-        }
         console.error(error);
-        setJsonFolderStatus("No se pudo vincular la carpeta JSON.", "status-error");
-        setJsonSaveStatus("Ha ocurrido un error al seleccionar la carpeta.", "status-error");
-        setJsonSyncState("error", "Estado del JSON: error al vincular carpeta");
-        await updateJsonFileInfoDetails();
+        linkedDirectoryHandle = null;
+        setJsonFolderStatus("No se pudo recuperar la carpeta vinculada. Puedes seguir trabajando en local.", "status-warn");
+        setJsonSaveStatus("Datos guardados en este navegador.", "status-warn");
+        setJsonSyncState("pending", "Estado del JSON: guardado local en navegador");
       }
+
+      await updateJsonFileInfoDetails();
     }
 
     function loadIdeas() {
@@ -1324,12 +1323,15 @@
     }
 
     function saveIdeas(ideas) {
-      if (!ensureLinkedFolderSelected(false)) {
-        updateFolderRequiredBanner();
-        return false;
-      }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(ideas));
-      scheduleLinkedJsonAutosave(ideas);
+      if (linkedDirectoryHandle) {
+        scheduleLinkedJsonAutosave(ideas);
+      } else {
+        setJsonFolderStatus("Carpeta no seleccionada. Puedes trabajar en local o importar/exportar JSON manualmente.", "status-warn");
+        setJsonSaveStatus("Datos guardados en este navegador.", "status-ok");
+        setJsonSyncState("pending", "Estado del JSON: guardado local en navegador");
+      }
+      updateFolderRequiredBanner();
       return true;
     }
 
@@ -1479,11 +1481,18 @@ function formatText(command, value = null) {
         editable = taskCard ? taskCard.querySelector('.task-descripcion') : null;
       }
 
-      if (!editable) return;
+      if (!editable || !symbol) return;
 
       editable.focus();
       document.execCommand('insertText', false, `${symbol} `);
       editable.dispatchEvent(new Event('input'));
+    }
+
+    function insertSelectedSticker(selectEl, target) {
+      const value = selectEl?.value || '';
+      if (!value) return;
+      insertSticker(target, value);
+      selectEl.value = '';
     }
 
     function normalizeText(value) {
@@ -1611,6 +1620,24 @@ function formatText(command, value = null) {
               <button type="button" title="Insertar aprobado" onclick="insertSticker(this, '✔️')">✔️</button>
               <button type="button" title="Insertar importante" onclick="insertSticker(this, '⚠️')">⚠️</button>
               <button type="button" title="Insertar no aprobado" onclick="insertSticker(this, '❌')">❌</button>
+              <button type="button" title="Insertar estrella" onclick="insertSticker(this, '⭐')">⭐</button>
+              <button type="button" title="Insertar idea" onclick="insertSticker(this, '💡')">💡</button>
+              <button type="button" title="Insertar fijado" onclick="insertSticker(this, '📌')">📌</button>
+              <button type="button" title="Insertar llamada" onclick="insertSticker(this, '📞')">📞</button>
+              <button type="button" title="Insertar reunión agendada" onclick="insertSticker(this, '🗓️')">🗓️</button>
+              <button type="button" title="Insertar coste" onclick="insertSticker(this, '💲')">💲</button>
+              <button type="button" title="Insertar mantenimiento" onclick="insertSticker(this, '🛠️')">🛠️</button>
+              <select onchange="insertSelectedSticker(this, this)" title="Más stickers" style="width:auto; min-width:120px;">
+                <option value="">Más stickers</option>
+                <option value="🕒">🕒 Pendiente</option>
+                <option value="🚚">🚚 Transporte</option>
+                <option value="🛠️">🛠️ Mantenimiento</option>
+                <option value="📅">📅 Fecha</option>
+                <option value="📍">📍 Ubicación</option>
+                <option value="💲">💲 Coste</option>
+                <option value="🧪">🧪 Ensayo</option>
+                <option value="🏭">🏭 Planta</option>
+              </select>
             </div>
             <div class="task-descripcion rich-text" contenteditable="true" data-placeholder="Describe la acción">${sanitizeRichText(task.descripcion || "")}</div>
 
@@ -1924,6 +1951,13 @@ function formatText(command, value = null) {
       ideasVisibles.forEach(idea => selectedIdeaIds.add(idea.id));
     }
 
+    function countIdeasWithSticker(ideas, sticker) {
+      return ideas.filter(i => {
+        const text = [i.titulo || "", i.descripcion || "", JSON.stringify(i.extra || {})].join(" ");
+        return text.includes(sticker);
+      }).length;
+    }
+
     function renderStats() {
       const ideas = normalizeIdeasArray(loadIdeas());
       statTotal.textContent = ideas.length;
@@ -1931,6 +1965,10 @@ function formatText(command, value = null) {
       statEnCurso.textContent = ideas.filter(i => i.estado === "en_curso").length;
       statHechas.textContent = ideas.filter(i => i.estado === "hecha").length;
       statUrgentes.textContent = ideas.filter(i => i.prioridad === "urgente" && i.estado !== "hecha" && i.estado !== "descartada").length;
+      statStickerMoney.textContent = countIdeasWithSticker(ideas, "💲");
+      statStickerMaintenance.textContent = countIdeasWithSticker(ideas, "🛠️");
+      statStickerRisk.textContent = countIdeasWithSticker(ideas, "⚠️");
+      statStickerIdea.textContent = countIdeasWithSticker(ideas, "💡");
     }
 
     function renderToday() {
@@ -2464,8 +2502,6 @@ function formatText(command, value = null) {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
 
-      if (!ensureLinkedFolderSelected(true)) return;
-
       if (!titulo.value.trim()) {
         alert("El título es obligatorio.");
         return;
@@ -2517,6 +2553,15 @@ function formatText(command, value = null) {
     printCurrentPdfBtn.addEventListener("click", printCurrentIdeaToPDF);
     printCurrentWordBtn.addEventListener("click", exportCurrentIdeaToWord);
     linkJsonFolderBtn.addEventListener("click", chooseLinkedJsonFolder);
+    if (pickAndroidFolderBtn) {
+      pickAndroidFolderBtn.addEventListener("click", async () => {
+        if (!supportsLinkedJsonAutosave()) {
+          alert("Este navegador no permite fijar una carpeta. En ese caso usa Importar JSON y Exportar JSON desde Archivos/OneDrive.");
+          return;
+        }
+        await chooseLinkedJsonFolder();
+      });
+    }
     saveJsonNowBtn.addEventListener("click", forceSaveLinkedJsonNow);
     renameJsonBtn.addEventListener("click", renameActiveJsonFile);
 
